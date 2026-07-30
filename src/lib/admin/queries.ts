@@ -69,15 +69,26 @@ function toSummary(row: SummaryRow): BookingSummary {
   };
 }
 
-/** The projection every list screen shares. */
-const SUMMARY_COLUMNS = sql`
-  b.id, b.reference,
-  to_char(b.booking_date, 'YYYY-MM-DD') AS booking_date,
-  to_char(b.preferred_start, 'HH24:MI:SS') AS preferred_start,
-  b.status, b.customer_name, b.customer_phone, b.address_line,
-  b.area, b.city, b.price_total, b.currency, b.created_at,
-  d.id AS driver_id, d.full_name AS driver_name
-`;
+/**
+ * The projection every list screen shares.
+ *
+ * A FUNCTION, not a module-level constant. Building the fragment eagerly means
+ * calling `sql` while this module is being imported — and `next build` imports
+ * every route module to collect page data, so it ran at build time and demanded
+ * DATABASE_URL from an environment that has no reason to have one. That failed
+ * the Vercel deployment. Deferring it to call time costs nothing: postgres.js
+ * rebuilds the fragment per query anyway.
+ */
+function summaryColumns() {
+  return sql`
+    b.id, b.reference,
+    to_char(b.booking_date, 'YYYY-MM-DD') AS booking_date,
+    to_char(b.preferred_start, 'HH24:MI:SS') AS preferred_start,
+    b.status, b.customer_name, b.customer_phone, b.address_line,
+    b.area, b.city, b.price_total, b.currency, b.created_at,
+    d.id AS driver_id, d.full_name AS driver_name
+  `;
+}
 
 // ---------------------------------------------------------------------------
 // Overview
@@ -102,7 +113,7 @@ export async function getOverview(
 
   return asUser(session.userId, async (tx) => {
     const todaysRows = await tx<SummaryRow[]>`
-      SELECT ${SUMMARY_COLUMNS}
+      SELECT ${summaryColumns()}
         FROM bookings b
         LEFT JOIN dispatch_recipients d ON d.id = b.assigned_driver
        WHERE b.booking_date = ${today}::date
@@ -114,7 +125,7 @@ export async function getOverview(
     const nextRows = todaysRows.length
       ? []
       : await tx<SummaryRow[]>`
-          SELECT ${SUMMARY_COLUMNS}
+          SELECT ${summaryColumns()}
             FROM bookings b
             LEFT JOIN dispatch_recipients d ON d.id = b.assigned_driver
            WHERE b.booking_date > ${today}::date
@@ -150,7 +161,7 @@ export async function getOverview(
     `;
 
     const needsDriver = await tx<SummaryRow[]>`
-      SELECT ${SUMMARY_COLUMNS}
+      SELECT ${summaryColumns()}
         FROM bookings b
         LEFT JOIN dispatch_recipients d ON d.id = b.assigned_driver
        WHERE b.status = 'confirmed'
@@ -190,7 +201,7 @@ export async function getCalendarMonth(
 ): Promise<CalendarDay[]> {
   return asUser(session.userId, async (tx) => {
     const bookings = await tx<SummaryRow[]>`
-      SELECT ${SUMMARY_COLUMNS}
+      SELECT ${summaryColumns()}
         FROM bookings b
         LEFT JOIN dispatch_recipients d ON d.id = b.assigned_driver
        WHERE to_char(b.booking_date, 'YYYY-MM') = ${month}
@@ -300,14 +311,14 @@ export async function getOrders(
 
     const rows = options?.unpaginated
       ? await tx<SummaryRow[]>`
-          SELECT ${SUMMARY_COLUMNS}
+          SELECT ${summaryColumns()}
             FROM bookings b
             LEFT JOIN dispatch_recipients d ON d.id = b.assigned_driver
             ${where}
            ORDER BY ${tx.unsafe(sortKey)} ${tx.unsafe(direction)}, b.reference DESC
         `
       : await tx<SummaryRow[]>`
-          SELECT ${SUMMARY_COLUMNS}
+          SELECT ${summaryColumns()}
             FROM bookings b
             LEFT JOIN dispatch_recipients d ON d.id = b.assigned_driver
             ${where}
@@ -406,7 +417,7 @@ export async function getBookingDetail(
         updated_at: string;
       })[]
     >`
-      SELECT ${SUMMARY_COLUMNS},
+      SELECT ${summaryColumns()},
              b.customer_email, b.maps_url, b.lat::text, b.lng::text, b.notes,
              b.locale, b.price_rental, b.price_setup, b.price_delivery,
              b.hold_expires_at, b.phone_verified_at, b.updated_at
