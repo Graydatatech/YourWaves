@@ -151,6 +151,35 @@ pnpm test:holds-soak   # 50-parallel hold race, N times (default 20)
 that silently drops prepared statements, a role that cannot read its own
 tables, a half-applied migration. It checks all of them and names the fix.
 
+### Serverless: one connection per instance, and nothing at module scope
+
+Two production-only failures, both invisible locally, both fixed in
+[src/db/client.ts](src/db/client.ts):
+
+- **The pool is per PROCESS, and every Vercel invocation is a process.** The
+  session pooler caps the whole project at `pool_size` (15 by default), so a
+  `max: 10` pool meant two busy instances exhausted it and the next request got
+  `FATAL (EMAXCONNSESSION) max clients reached in session mode` — rendered to
+  the user as "This page couldn't load". `max` is now **1** when `VERCEL` or
+  `AWS_LAMBDA_FUNCTION_NAME` is set, with a 5s idle timeout, and stays 10 for a
+  long-lived Node server where one process serves everything.
+- **`next build` imports every route module to collect page data**, so anything
+  at module scope runs at BUILD time. Creating the client eagerly — or building
+  a `sql` fragment as a module constant, which `admin/queries.ts` did — made the
+  build demand `DATABASE_URL` from an environment that has no reason to have
+  one, and failed the deployment. `sql` and `db` are now proxies that connect on
+  first use. **Do not introduce a module-level `const X = sql\`…\``**; make it a
+  function.
+
+One correction to the warning above: the locks this project takes are
+`pg_advisory_xact_lock`, which are **transaction**-scoped and therefore survive
+the transaction pooler (6543) fine — a transaction is pinned to one backend.
+What does not survive is a *session*-scoped `pg_advisory_lock`, which nothing
+here uses. If the 15-client ceiling becomes the constraint, moving to 6543 is
+the scaling path — `connectionOptions()` already disables prepared statements
+when it sees that port — but soak it with `pnpm test:holds-soak` against the
+pooler before trusting it.
+
 ---
 
 ## 3. Design tokens

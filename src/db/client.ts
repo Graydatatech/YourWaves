@@ -34,15 +34,38 @@ const globalForDb = globalThis as unknown as {
   __yourwavesSql?: ReturnType<typeof postgres>;
 };
 
+/**
+ * A serverless instance must hold ONE connection, not a pool.
+ *
+ * The pool size is per PROCESS, and on Vercel every concurrent invocation is
+ * its own process. Supabase's session pooler caps the whole project at
+ * `pool_size` (15 by default), so `max: 10` meant two busy instances could
+ * exhaust the project and the third got:
+ *
+ *     FATAL (EMAXCONNSESSION) max clients reached in session mode
+ *
+ * which surfaced as "This page couldn't load" on /admin/settings. One
+ * connection per instance turns that ceiling into ~15 concurrent instances
+ * instead of ~1.5, and costs nothing here: a Vercel function serves one request
+ * at a time, so the queries within a request queue on that connection rather
+ * than running in parallel — a little slower, but a page that renders beats a
+ * page that 500s.
+ *
+ * A long-lived Node server is the opposite case: one process serves everything,
+ * so it wants a real pool.
+ */
+const serverless = Boolean(
+  process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME,
+);
+
 function createClient() {
   const url = databaseUrl();
   return postgres(url, {
     ...connectionOptions(url),
-    // Route handlers are short-lived. Supabase's pooler enforces a per-project
-    // client limit, and several serverless instances each holding a large pool
-    // will exhaust it, so keep this small.
-    max: 10,
-    idle_timeout: 20,
+    max: serverless ? 1 : 10,
+    // Hand the connection back quickly when idle, so a burst of instances does
+    // not sit on the project's allowance between requests.
+    idle_timeout: serverless ? 5 : 20,
     connect_timeout: 10,
   });
 }
