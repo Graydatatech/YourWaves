@@ -1,0 +1,424 @@
+@import "tailwindcss";
+
+/* ---------------------------------------------------------------------------
+   1. Raw design tokens (SRS GDT-SRS-2026-YW-01)
+   These are the single source of truth. Never hardcode a hex value in a
+   component — add it here first.
+--------------------------------------------------------------------------- */
+:root {
+  /* Brand */
+  --brand-gradient: linear-gradient(135deg, #22e0d6, #34c8ff);
+  --accent: #0b8fa3;
+  --accent-light: #7ff2ea;
+  /* Accessible variant of --accent for text below 18.66px.
+     --accent itself is 3.84:1 on white, which fails WCAG AA for small text;
+     this is 5.03:1. The brand colour is unchanged — large text, icons, fills
+     and borders still use --accent. Use --accent-strong for small copy. */
+  --accent-strong: #0a7a8c;
+
+  /* Ink & text */
+  --ink: #0b2a3d;
+  --ink-deep: #04141f;
+  --muted: #4a6577;
+  --muted-2: #587488;
+  --muted-3: #5f7c8e;
+
+  /* Surfaces */
+  --surface: #ffffff;
+  --border: rgba(11, 42, 61, 0.09);
+  --footer: #04202f;
+
+  /* Elevation */
+  --shadow-card: 0 12px 34px rgba(11, 42, 61, 0.06);
+  --shadow-cta: 0 16px 40px rgba(34, 224, 214, 0.36);
+
+  /* Radii */
+  --radius-card: 24px;
+  --radius-input: 14px;
+  --radius-pill: 999px;
+
+  /* Composite backgrounds */
+  --page-background:
+    radial-gradient(1100px 640px at 82% -8%, #d3ecf6 0%, transparent 58%),
+    linear-gradient(180deg, #f5fafd 0%, #e9f3f8 62%, #e1edf4 100%);
+  --dark-panel: repeating-linear-gradient(
+    135deg,
+    #0a2c46 0 16px,
+    #0c3654 16px 32px
+  );
+  /* Price summary card (phase 3). */
+  --summary-gradient: linear-gradient(160deg, #e8fbf9 0%, #eaf5fd 100%);
+  /* Desktop sticky offset for the summary: clears the 64px header + breathing room. */
+  --summary-sticky-top: 96px;
+
+  /* Typography — remapped per locale below.
+     English: Manrope body + Sora headings.
+     Arabic:  IBM Plex Sans Arabic for both. */
+  --font-body: var(--font-manrope);
+  --font-display: var(--font-sora);
+
+  /* Layout ------------------------------------------------------------------
+     Single inline gutter for every section, so nothing can drift out of
+     alignment between sections. */
+  --gutter: clamp(18px, 4vw, 48px);
+  /* Sticky header height, used for scroll-margin so anchor links do not land
+     underneath the header. */
+  --header-h: 64px;
+  --header-surface: rgba(245, 250, 253, 0.82);
+  /* Hero scrim: transparent at the top, near-opaque at the bottom so the
+     bottom-anchored copy always clears contrast regardless of the frame. */
+  --hero-scrim: linear-gradient(
+    180deg,
+    rgba(2, 12, 21, 0.15) 0%,
+    rgba(2, 12, 21, 0.45) 46%,
+    rgba(2, 12, 21, 0.92) 100%
+  );
+}
+
+/* Arabic swaps both roles to the Arabic face. Normally this matches <html
+   lang="ar"> and the whole tree inherits it. It is written as a bare :lang()
+   rather than :root:lang() so a nested lang="ar" subtree (the styleguide
+   renders both locales on one page) also gets the right face. Any element
+   re-declaring font-family — e.g. Tailwind's `font-sans` — picks it up. */
+:lang(ar) {
+  --font-body: var(--font-ibm-plex-arabic);
+  --font-display: var(--font-ibm-plex-arabic);
+}
+
+/* Direction-dependent offset for the slide-in nav panel (see @keyframes
+   slideInEnd). Keyed off [dir] because `translate` has no logical equivalent. */
+[dir="ltr"] {
+  --slide-from: 100%;
+}
+[dir="rtl"] {
+  --slide-from: -100%;
+}
+
+/* ---------------------------------------------------------------------------
+   2. Tailwind v4 theme mapping
+   `inline` keeps the utilities referencing the vars above, so the per-locale
+   font swap and any future theming still cascade at use site.
+--------------------------------------------------------------------------- */
+@theme inline {
+  --color-accent: var(--accent);
+  --color-accent-light: var(--accent-light);
+  --color-accent-strong: var(--accent-strong);
+  --color-ink: var(--ink);
+  --color-ink-deep: var(--ink-deep);
+  --color-muted: var(--muted);
+  --color-muted-2: var(--muted-2);
+  --color-muted-3: var(--muted-3);
+  --color-surface: var(--surface);
+  --color-border: var(--border);
+  --color-footer: var(--footer);
+
+  --shadow-card: var(--shadow-card);
+  --shadow-cta: var(--shadow-cta);
+
+  --radius-card: var(--radius-card);
+  --radius-input: var(--radius-input);
+  --radius-pill: var(--radius-pill);
+
+  --font-sans: var(--font-body);
+  --font-display: var(--font-display);
+
+  --animate-floaty: floaty 6s ease-in-out infinite;
+  --animate-rise-in: riseIn 0.8s ease-out both;
+  --animate-shimmer: shimmer 1.6s linear infinite;
+  --animate-slide-in-end: slideInEnd 0.28s ease-out both;
+
+  /* 900px is where this design stops being a phone layout: the header swaps to
+     its desktop row and the booking flow swaps from a wizard to two columns.
+     One breakpoint, one name — gives us the `wide:` variant. */
+  --breakpoint-wide: 900px;
+}
+
+/* ---------------------------------------------------------------------------
+   3. Keyframes
+--------------------------------------------------------------------------- */
+@keyframes floaty {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes riseIn {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* The nav panel is pinned to the inline end, so it must enter from the right
+   in LTR and the left in RTL. `translate` has no logical form, so the offset
+   is carried in a custom property that flips with [dir]. */
+@keyframes slideInEnd {
+  from {
+    opacity: 0;
+    translate: var(--slide-from, 100%) 0;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+
+/* Uses inset-inline-start so the sweep travels with the reading direction. */
+@keyframes shimmer {
+  from {
+    inset-inline-start: -150%;
+  }
+  to {
+    inset-inline-start: 150%;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   4. Custom utilities
+   `bg-brand` must be a gradient, which Tailwind's color namespace cannot
+   express, so it is a hand-rolled utility rather than a --color-* token.
+--------------------------------------------------------------------------- */
+@utility bg-brand {
+  background-image: var(--brand-gradient);
+}
+
+@utility text-brand {
+  background-image: var(--brand-gradient);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+}
+
+@utility bg-page {
+  background: var(--page-background);
+}
+
+@utility bg-dark-panel {
+  background: var(--dark-panel);
+}
+
+@utility bg-summary {
+  background: var(--summary-gradient);
+}
+
+/* ---------------------------------------------------------------------------
+   Booking calendar sizing
+
+   The hard constraint: cells must never fall below 44x44 CSS px, even at a
+   320px viewport. The arithmetic does not leave room for anything else there:
+   7 x 44 = 308px, leaving just 12px for six gaps and both card paddings. So on
+   the narrowest phones the calendar card cancels the page gutter and drops its
+   own inline padding to zero, and the gap tightens — the CELL never shrinks.
+   From ~380px up the gap relaxes to the designed 8px.
+--------------------------------------------------------------------------- */
+@utility calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: var(--cal-gap);
+}
+
+/* Glass surface used by secondary buttons and floating bars. */
+@utility glass {
+  background-color: color-mix(in srgb, var(--surface) 72%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* Header bar: the design's rgba(245,250,253,.82) over a blur. */
+@utility glass-header {
+  background-color: var(--header-surface);
+  backdrop-filter: blur(14px) saturate(1.4);
+  -webkit-backdrop-filter: blur(14px) saturate(1.4);
+}
+
+/* ---------------------------------------------------------------------------
+   Layout rhythm
+
+   One inline-padding rule for every section on the page. Using clamp() rather
+   than breakpoints means the gutter grows continuously, so there is no width
+   at which the content is either cramped or stranded.
+--------------------------------------------------------------------------- */
+@utility section-x {
+  padding-inline: var(--gutter);
+}
+
+@utility section-y {
+  padding-block: clamp(56px, 9vw, 112px);
+}
+
+/* Centred content column that already carries the gutter. */
+@utility shell {
+  inline-size: 100%;
+  max-inline-size: calc(1200px + var(--gutter) * 2);
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+
+/* ---------------------------------------------------------------------------
+   Fluid type scale (mobile-first: the small end is the design target)
+--------------------------------------------------------------------------- */
+@utility text-display {
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-weight: 800;
+  font-size: clamp(34px, 7vw, 84px);
+  line-height: 1.02;
+  letter-spacing: -0.02em;
+}
+
+@utility text-h2 {
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-weight: 800;
+  font-size: clamp(28px, 5vw, 52px);
+  line-height: 1.08;
+  letter-spacing: -0.015em;
+}
+
+/* Body copy never drops below 16px — see the mobile-first rule in CLAUDE.md. */
+@utility text-body {
+  font-size: clamp(16px, 1.6vw, 18px);
+  line-height: 1.65;
+}
+
+/* ---------------------------------------------------------------------------
+   Interaction helpers
+--------------------------------------------------------------------------- */
+
+/* Expands a small control's hit area to 44x44 without changing its painted
+   size — used by icon buttons and inline links that sit in dense rows. */
+@utility tap-expand {
+  position: relative;
+}
+
+/* Horizontal snap carousel (mobile testimonials). Scrollbar hidden because the
+   dot indicators communicate position instead. */
+@utility snap-row {
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  overscroll-behavior-inline: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Every interactive element must clear the 44x44 touch target. */
+@utility tap-target {
+  min-block-size: 44px;
+  min-inline-size: 44px;
+}
+
+/* ---------------------------------------------------------------------------
+   5. Base layer
+--------------------------------------------------------------------------- */
+@layer base {
+  html {
+    background: var(--page-background);
+    /* Deliberately NOT background-attachment: fixed. A fixed, viewport-sized
+       gradient forces a full-page repaint on every scroll frame and promotes a
+       large composited layer — measurable Style & Layout cost on a throttled
+       mobile CPU, for a gradient subtle enough that the parallax is invisible. */
+    background-repeat: no-repeat;
+    color: var(--ink);
+    /* Stop iOS from re-flowing text size on orientation change. */
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    min-block-size: 100dvh;
+    margin: 0;
+    background: transparent;
+    font-family: var(--font-body), system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-display), system-ui, sans-serif;
+    text-wrap: balance;
+  }
+
+  /* Never let a focus ring be invisible — accessibility floor for the project. */
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  ::selection {
+    background: color-mix(in srgb, var(--accent-light) 60%, transparent);
+    color: var(--ink-deep);
+  }
+
+  /* In-page anchors must clear the sticky header instead of landing beneath it. */
+  :target,
+  [id] {
+    scroll-margin-block-start: calc(var(--header-h) + 12px);
+  }
+
+  /* WebKit still needs the pseudo-element to hide a scrollbar. */
+  .snap-row::-webkit-scrollbar {
+    display: none;
+  }
+
+  /*
+    Calendar full-bleed on phones.
+
+    A 44px cell floor and the page's 18px gutter cannot both hold at 320px:
+    7 x 44 = 308px, leaving 12px, while the gutter alone wants 36px. The brief
+    says sacrifice the card's horizontal padding rather than the cell, so on
+    narrow viewports the calendar cancels the section gutter and then spends
+    what is left in a fixed priority order:
+
+      1. the seven 44px cells                        (308px, never negotiable)
+      2. the gaps, up to the designed 8px            (--cal-gap)
+      3. inline padding, up to 16px, from the remainder (--cal-pad)
+
+    Deriving both from the same slack is what keeps them consistent: an earlier
+    version clamped them independently and 360px came out at 42px cells, because
+    the padding grew faster than the gap budget allowed.
+  */
+  .calendar-bleed {
+    --cal-gap: clamp(2px, calc((100vw - 308px) / 6), 8px);
+    --cal-pad: max(
+      0px,
+      min(16px, calc((100vw - 308px - 6 * var(--cal-gap)) / 2))
+    );
+    margin-inline: calc(var(--gutter) * -1);
+    padding-inline: var(--cal-pad);
+  }
+
+  @media (min-width: 900px) {
+    .calendar-bleed {
+      /* Inside the desktop card the container is already comfortable. */
+      --cal-gap: 8px;
+      --cal-pad: 0px;
+      margin-inline: 0;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+
+    /* Belt and braces: the decorative orb and any parallax translate are
+       switched off entirely, not merely sped up. */
+    .motion-decoration {
+      animation: none !important;
+      transform: none !important;
+    }
+  }
+}

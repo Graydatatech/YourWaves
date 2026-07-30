@@ -1,0 +1,94 @@
+{
+  "_comment": [
+    "The positional contract for every WhatsApp template, as plain data.",
+    "",
+    "This file is the SINGLE source of truth for parameter order. The registry",
+    "builds the outgoing parameter array from it, and",
+    "scripts/gen-whatsapp-templates.mjs builds docs/whatsapp-templates.md from",
+    "it, so the message Meta approves and the parameters we send cannot",
+    "disagree. Both read this file directly — nothing parses TypeScript.",
+    "",
+    "`params` MUST list every placeholder the copy uses, in order of first",
+    "appearance in the ENGLISH text, and nothing else: Meta requires the body's",
+    "placeholders to run {{1}}..{{n}} with no gaps, and rejects a send whose",
+    "parameter count differs from the approved body (error #132000).",
+    "",
+    "Names must exist in VALUE_RESOLVERS in ./index.ts, and must match the",
+    "{placeholders} in the message catalogue entry named by `messageKey`.",
+    "`pnpm gen:whatsapp-templates` fails if any of that is untrue."
+  ],
+  "templates": {
+    "yw_booking_confirmed": {
+      "messageKey": "bookingConfirmed.whatsapp",
+      "params": [
+        "reference",
+        "date",
+        "time",
+        "address",
+        "total"
+      ]
+    },
+    "yw_driver_assignment": {
+      "messageKey": "driverAssignment.whatsapp",
+      "params": [
+        "reference",
+        "arriveBy",
+        "date",
+        "customer",
+        "phone",
+        "address",
+        "maps"
+      ]
+    },
+    "yw_assigned": {
+      "messageKey": "status.assigned.whatsapp",
+      "params": [
+        "reference",
+        "date",
+        "driver",
+        "time"
+      ]
+    },
+    "yw_en_route": {
+      "messageKey": "status.en_route.whatsapp",
+      "params": [
+        "reference",
+        "driver",
+        "address"
+      ]
+    },
+    "yw_setup_complete": {
+      "messageKey": "status.setup_complete.whatsapp",
+      "params": [
+        "reference"
+      ]
+    },
+    "yw_completed": {
+      "messageKey": "status.completed.whatsapp",
+      "params": [
+        "reference"
+      ]
+    },
+    "yw_cancelled": {
+      "messageKey": "status.cancelled.whatsapp",
+      "params": [
+        "reference",
+        "date"
+      ]
+    },
+    "yw_dispatch_job": {
+      "messageKey": "dispatch.whatsapp",
+      "params": [
+        "reference",
+        "date",
+        "arriveBy",
+        "customer",
+        "phone",
+        "area",
+        "payment",
+        "jobLink",
+        "mapsLink"
+      ]
+    }
+  }
+}
