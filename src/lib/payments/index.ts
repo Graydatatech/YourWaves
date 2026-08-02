@@ -24,7 +24,17 @@ export function createPaymentProvider(): PaymentProvider {
   if (cached) return cached;
 
   const isProduction = process.env.NODE_ENV === "production";
-  const requested = (process.env.PAYMENT_PROVIDER ?? "mock").toLowerCase();
+  /**
+   * TRIMMED, not just lowercased.
+   *
+   * These values are pasted into a dashboard by a human, and a trailing space
+   * survives that journey far more often than anyone expects. Without the trim,
+   * `"skipcash "` fails the comparison below and reports itself as "the mock is
+   * active" — an error that describes a variable nobody set, and sends the
+   * reader looking for the wrong thing entirely.
+   */
+  const raw = process.env.PAYMENT_PROVIDER;
+  const requested = (raw ?? "mock").trim().toLowerCase();
 
   if (requested === "skipcash") {
     const apiUrl = process.env.SKIPCASH_API_URL;
@@ -59,9 +69,25 @@ export function createPaymentProvider(): PaymentProvider {
   }
 
   if (isProduction) {
+    /**
+     * Say what was actually seen. The original message named the rule and not
+     * the input, so "unset", "mock", and a typo were indistinguishable — and
+     * the commonest cause by far is the variable simply not being scoped to
+     * this environment in the dashboard, which reads identically to unset.
+     *
+     * Quoted so a stray space is visible, and it is safe to print: this
+     * variable names a provider, it is not a credential.
+     */
+    const seen =
+      raw === undefined ? "not set" : `${JSON.stringify(raw)} (unrecognised)`;
+
     throw new Error(
-      "PAYMENT_PROVIDER must be a real provider in production. The mock takes " +
-        "no money and would confirm bookings for free.",
+      `PAYMENT_PROVIDER must be a real provider in production — it is ${seen}. ` +
+        "The mock takes no money and would confirm bookings for free. " +
+        "Expected 'skipcash'. If you have set it, check it is scoped to this " +
+        "environment in the deployment settings AND that the project has been " +
+        "redeployed since — environment changes do not apply to a build that " +
+        "already exists.",
     );
   }
 
