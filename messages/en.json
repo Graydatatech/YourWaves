@@ -261,10 +261,10 @@
       "phoneHint": "We will confirm on WhatsApp. You will verify this number in the next step.",
       "phoneError": "That is not a valid mobile number for the country selected.",
       "phoneRequired": "Please give us a mobile number.",
-      "emailLabel": "Email (optional)",
+      "emailLabel": "Email",
       "emailPlaceholder": "you@example.com",
       "emailError": "Please check that email address.",
-      "emailHint": "Only used to send your confirmation.",
+      "emailHint": "Your booking confirmation and receipt are sent here.",
       "verifyHeading": "Verify your mobile",
       "changeNumber": "Use a different number",
       "phoneHintNoVerify": "We will confirm on WhatsApp.",
@@ -302,7 +302,8 @@
       "networkError": "No connection. Check your signal and try again.",
       "needVerification": "Verify your mobile number to continue.",
       "phoneNotVerified": "Your number needs verifying again. Please request a new code.",
-      "needTerms": "Please agree to the terms and conditions"
+      "needTerms": "Please agree to the terms and conditions",
+      "needEmail": "Please enter your email address"
     },
     "otp": {
       "intro": "We will send a 4-digit code to this number on WhatsApp.",

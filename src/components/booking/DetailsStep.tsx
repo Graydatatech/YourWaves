@@ -35,6 +35,7 @@ export type DetailsStepProps = {
  */
 export function DetailsStep({ showErrors }: DetailsStepProps) {
   const t = useTranslations("booking.details");
+  const tErrors = useTranslations("booking.errors");
   const { draft, patch, locale } = useBooking();
 
   const nameId = useId();
@@ -54,8 +55,13 @@ export function DetailsStep({ showErrors }: DetailsStepProps) {
   // Only complain about a partly-typed number once there is something to judge.
   const phoneInvalid = national.trim() !== "" && !toE164(dial, national);
   const phoneMissing = national.trim() === "";
+  // Malformed, OR empty now that the field is required. `showErrors` gates
+  // when this becomes visible, so it does not shout at a field nobody has
+  // reached yet.
   const emailInvalid =
-    email.trim() !== "" && !z.string().email().safeParse(email.trim()).success;
+    email.trim() === ""
+      ? BOOKING_FORM.email
+      : !z.string().email().safeParse(email.trim()).success;
 
   const e164 = toE164(dial, national);
   const verified = isPhoneVerified(draft);
@@ -159,10 +165,15 @@ export function DetailsStep({ showErrors }: DetailsStepProps) {
       {/* Email ------------------------------------------------------------ */}
       {BOOKING_FORM.email && (
         <div>
-          <Label htmlFor={emailId}>{t("emailLabel")}</Label>
+          <Label htmlFor={emailId} required>
+            {t("emailLabel")}
+          </Label>
+          {/* Says WHY it is being asked for. An email field on a form that
+              otherwise runs on WhatsApp reads as marketing capture unless the
+              reason is on screen. */}
+          <p className="text-muted-2 mt-1 mb-2 text-sm">{t("emailHint")}</p>
           <Input
             id={emailId}
-            className="mt-2"
             type="email"
             inputMode="email"
             dir="ltr"
@@ -170,8 +181,10 @@ export function DetailsStep({ showErrors }: DetailsStepProps) {
             onChange={(event) => patch({ customerEmail: event.target.value })}
             placeholder={t("emailPlaceholder")}
             autoComplete="email"
-            invalid={emailInvalid}
-            aria-describedby={emailInvalid ? `${emailId}-error` : undefined}
+            invalid={showErrors && emailInvalid}
+            aria-describedby={
+              showErrors && emailInvalid ? `${emailId}-error` : undefined
+            }
           />
           <p
             id={`${emailId}-error`}
@@ -179,7 +192,11 @@ export function DetailsStep({ showErrors }: DetailsStepProps) {
             aria-live="polite"
             className="text-sm font-semibold text-danger empty:hidden"
           >
-            {emailInvalid ? t("emailError") : ""}
+            {showErrors && emailInvalid
+              ? email.trim() === ""
+                ? tErrors("needEmail")
+                : t("emailError")
+              : ""}
           </p>
           <p className="text-muted-2 mt-1 text-sm">{t("emailHint")}</p>
         </div>

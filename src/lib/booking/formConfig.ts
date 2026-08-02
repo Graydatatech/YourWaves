@@ -17,8 +17,25 @@ export const BOOKING_FORM = {
   /** "Anything we should know? (optional)" — the free-text notes box. */
   notes: false,
 
-  /** "Email (optional)". WhatsApp is the channel that matters here. */
-  email: false,
+  /**
+   * The customer's email address.
+   *
+   * REQUIRED, not optional, and that is a deliberate change from "off".
+   * WhatsApp is still the channel that matters for the conversation, but the
+   * confirmation email is the RECORD — reference, date, address and the full
+   * price breakdown, in something the customer can find again in six weeks
+   * when the crew is due. A WhatsApp thread is not that.
+   *
+   * It also stops SkipCash falling back to the business inbox: the gateway
+   * rejects an empty Email, so without one every receipt goes to the office
+   * rather than to the person who paid (see skipcash.ts).
+   *
+   * Optional would mean some customers silently get no record at all, which is
+   * the outcome the requirement exists to prevent. To go back to optional,
+   * remove the `needEmail` branch in stepValidators.details as well as
+   * flipping this.
+   */
+  email: true,
 
   /**
    * "Verify your mobile" — the WhatsApp OTP step (SRS 3.5, §4d).

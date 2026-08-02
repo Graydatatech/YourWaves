@@ -232,6 +232,7 @@ export type StepError =
   | "needName"
   | "invalidPhone"
   | "invalidEmail"
+  | "needEmail"
   | "needVerification"
   | "needTerms";
 
@@ -261,6 +262,12 @@ export const stepValidators: Record<
       !toE164(draft.dialCode ?? DEFAULT_DIAL_CODE, draft.phoneNational ?? "")
     ) {
       return "invalidPhone";
+    }
+    // Required whenever the field is shown, so the confirmation email has
+    // somewhere to go. Gated by the same flag the form reads — a field hidden
+    // here but demanded by the validator would block every submission.
+    if (BOOKING_FORM.email && !(draft.customerEmail ?? "").trim()) {
+      return "needEmail";
     }
     if (
       draft.customerEmail &&
