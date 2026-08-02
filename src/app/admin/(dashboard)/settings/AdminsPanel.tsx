@@ -33,10 +33,16 @@ export function AdminsPanel({ admins }: { admins: AdminUserRow[] }) {
   const [email, setEmail] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [created, setCreated] = useState<{
-    email: string;
-    password: string;
-  } | null>(null);
+  /**
+   * A LIST, not a single value, because adding several admins in one sitting is
+   * the normal case at launch and each password can only ever be read once.
+   * Overwriting on the second add silently destroyed the first one's
+   * credential — bcrypt in the database, nothing to recover, and the only
+   * remedy is creating the account again.
+   */
+  const [created, setCreated] = useState<
+    Array<{ email: string; password: string }>
+  >([]);
   const [pendingRevoke, setPendingRevoke] = useState<AdminUserRow | null>(null);
 
   async function addAdmin() {
@@ -54,7 +60,10 @@ export function AdminsPanel({ admins }: { admins: AdminUserRow[] }) {
         setError(t(`admins.errors.${body?.error ?? "failed"}`));
         return;
       }
-      setCreated({ email: body.email, password: body.password });
+      setCreated((previous) => [
+        ...previous,
+        { email: body.email, password: body.password },
+      ]);
       setEmail("");
       router.refresh();
     } catch {
@@ -189,8 +198,8 @@ export function AdminsPanel({ admins }: { admins: AdminUserRow[] }) {
         </p>
       )}
 
-      {/* The one-time credential ------------------------------------------- */}
-      {created && (
+      {/* One-time credentials — every account added this session ------------ */}
+      {created.length > 0 && (
         <div
           role="status"
           className="rounded-input mt-3 border border-[#a7f3d0] bg-[#ecfdf5] p-3"
@@ -198,26 +207,40 @@ export function AdminsPanel({ admins }: { admins: AdminUserRow[] }) {
           <p className="text-sm font-bold text-[#065f46]">
             {t("admins.createdTitle")}
           </p>
-          <dl className="mt-2 text-sm text-[#065f46]">
-            <dt className="text-xs font-bold uppercase opacity-80">
-              {t("admins.emailLabel")}
-            </dt>
-            <dd dir="ltr" className="font-mono break-all">
-              {created.email}
-            </dd>
-            <dt className="pt-2 text-xs font-bold uppercase opacity-80">
-              {t("admins.passwordLabel")}
-            </dt>
-            <dd dir="ltr" className="font-mono text-base break-all select-all">
-              {created.password}
-            </dd>
-          </dl>
+
+          {/* Each one stays until the whole block is dismissed. Adding a second
+              admin must never take the first one's password off the screen. */}
+          {created.map((account, index) => (
+            <dl
+              key={account.email}
+              className={cn(
+                "text-sm text-[#065f46]",
+                index === 0
+                  ? "mt-2"
+                  : "mt-3 border-t border-[#a7f3d0] pt-3",
+              )}
+            >
+              <dt className="text-xs font-bold uppercase opacity-80">
+                {t("admins.emailLabel")}
+              </dt>
+              <dd dir="ltr" className="font-mono break-all">
+                {account.email}
+              </dd>
+              <dt className="pt-2 text-xs font-bold uppercase opacity-80">
+                {t("admins.passwordLabel")}
+              </dt>
+              <dd dir="ltr" className="font-mono text-base break-all select-all">
+                {account.password}
+              </dd>
+            </dl>
+          ))}
+
           <p className="pt-2 text-xs text-[#065f46]">
             {t("admins.createdHint")}
           </p>
           <button
             type="button"
-            onClick={() => setCreated(null)}
+            onClick={() => setCreated([])}
             className="min-h-11 text-sm font-bold text-[#065f46] underline"
           >
             {t("admins.dismiss")}
