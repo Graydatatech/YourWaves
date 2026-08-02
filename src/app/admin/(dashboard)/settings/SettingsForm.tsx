@@ -50,6 +50,8 @@ export function SettingsForm({
     maxAdvanceDays: String(settings.maxAdvanceDays),
     holdMinutes: String(settings.holdMinutes),
     adminNotificationEmails: settings.adminNotificationEmails.join("\n"),
+    termsEn: settings.termsEn,
+    termsAr: settings.termsAr,
   });
 
   /**
@@ -98,6 +100,11 @@ export function SettingsForm({
           .map((area) => ({ en: area.en.trim(), ar: area.ar.trim() }))
           .filter((area) => area.en !== ""),
         adminNotificationEmails: lines(form.adminNotificationEmails),
+        // Sent verbatim — NOT split into lines. Blank lines are the paragraph
+        // separator the public page renders from, so collapsing them would
+        // silently reflow somebody's terms into one block.
+        termsEn: form.termsEn,
+        termsAr: form.termsAr,
       }),
     });
 
@@ -306,6 +313,36 @@ export function SettingsForm({
             {...field("adminNotificationEmails")}
           />
         </Labelled>
+      </section>
+
+      {/* Terms & conditions ---------------------------------------------- */}
+      <section className="border-border bg-surface rounded-card border p-4">
+        <h2 className="text-ink-deep text-sm font-bold">
+          {t("settings.terms")}
+        </h2>
+        <p className="text-muted-2 pt-1 text-sm">{t("settings.termsHint")}</p>
+
+        <div className="mt-3 flex flex-col gap-3">
+          <Labelled label={t("settings.termsEn")}>
+            <textarea
+              rows={10}
+              dir="ltr"
+              className={cn(FIELD, "py-2 font-mono text-sm")}
+              {...field("termsEn")}
+            />
+          </Labelled>
+          <Labelled
+            label={t("settings.termsAr")}
+            hint={t("settings.termsArHint")}
+          >
+            <textarea
+              rows={10}
+              dir="rtl"
+              className={cn(FIELD, "py-2 text-sm")}
+              {...field("termsAr")}
+            />
+          </Labelled>
+        </div>
       </section>
 
       {error ? (

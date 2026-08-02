@@ -150,6 +150,21 @@ export const bookingDraftSchema = z.object({
 
   notes: optionalTrimmed(MAX_NOTES_LENGTH),
   locale: z.enum(["ar", "en"]),
+
+  /**
+   * The terms & conditions tick.
+   *
+   * OPTIONAL IN THE SCHEMA, REQUIRED BY THE ROUTE. It cannot be `z.literal(true)`
+   * here because this schema is also what the wizard validates a half-filled
+   * draft against, and a hard requirement would make every partial draft
+   * invalid. The hold route enforces it instead, and only when terms actually
+   * exist — see `assertTermsAccepted`.
+   *
+   * A boolean from the client is not evidence of anything on its own; what it
+   * is, is the customer's assertion, recorded because the business asked for
+   * the tick. The server's job is to refuse a booking that does not carry it.
+   */
+  termsAccepted: z.boolean().optional(),
 });
 
 export type BookingDraft = z.infer<typeof bookingDraftSchema>;
@@ -170,6 +185,12 @@ export type BookingDraft = z.infer<typeof bookingDraftSchema>;
  */
 export type DraftState = Partial<BookingDraft> & {
   verifiedPhone?: string;
+  /**
+   * Whether terms exist at all, from /api/settings. Client-only, like
+   * `verifiedPhone` — it tells the wizard whether to render the tick and
+   * whether to insist on it, and the server decides for itself.
+   */
+  termsRequired?: boolean;
 };
 
 /**
@@ -252,6 +273,11 @@ export const stepValidators: Record<
     // here while the server ignores it, or hidden here while the server insists.
     if (BOOKING_FORM.phoneVerification && !isPhoneVerified(draft)) {
       return "needVerification";
+    }
+    // Only demanded when there are terms to agree to. `termsRequired` is set
+    // from /api/settings, so hiding the tick and requiring it cannot diverge.
+    if (draft.termsRequired && draft.termsAccepted !== true) {
+      return "needTerms";
     }
     return null;
   },

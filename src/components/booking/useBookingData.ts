@@ -26,6 +26,8 @@ export type PublicSettings = {
   maxAdvanceDays: number;
   holdMinutes: number;
   serviceAreas: ServiceArea[];
+  /** True when terms exist to agree to. The tick is hidden when they do not. */
+  termsAvailable: boolean;
   timeZone: string;
 };
 
@@ -48,6 +50,7 @@ export function useSettings() {
           setSettings({
             ...data,
             serviceAreas: toServiceAreas(data.serviceAreas),
+            termsAvailable: data.termsAvailable === true,
           });
         }
       })

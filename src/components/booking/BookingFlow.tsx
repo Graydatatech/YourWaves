@@ -24,9 +24,26 @@ function FlowInner() {
   const locale = useLocale() as Locale;
   const tErrors = useTranslations("booking.errors");
   const narrow = useIsNarrow();
-  const { draft, hydrated, goTo } = useBooking();
+  const { draft, hydrated, goTo, patch } = useBooking();
 
   const { settings, error: settingsError } = useSettings();
+
+  /**
+   * Mirror "do terms exist?" into the draft once settings land.
+   *
+   * The step validator only sees the draft, and it needs to know whether to
+   * insist on the agreement tick. Copying the flag in keeps that decision in
+   * one place — the settings endpoint — rather than having the validator and
+   * the checkbox each decide for themselves and disagree.
+   *
+   * Client-only, like `verifiedPhone`: zod strips it on the way to the server,
+   * which asks the database directly instead of believing this.
+   */
+  useEffect(() => {
+    if (!settings) return;
+    if (draft.termsRequired === settings.termsAvailable) return;
+    patch({ termsRequired: settings.termsAvailable });
+  }, [settings, draft.termsRequired, patch]);
 
   // Start on the month of the selected date if there is one, else this month.
   const initialMonth = useMemo<IsoMonth>(

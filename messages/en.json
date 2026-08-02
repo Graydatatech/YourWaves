@@ -267,7 +267,9 @@
       "emailHint": "Only used to send your confirmation.",
       "verifyHeading": "Verify your mobile",
       "changeNumber": "Use a different number",
-      "phoneHintNoVerify": "We will confirm on WhatsApp."
+      "phoneHintNoVerify": "We will confirm on WhatsApp.",
+      "termsAgree": "I agree to the <link>terms and conditions</link>",
+      "termsError": "Please agree to the terms and conditions to continue."
     },
     "summary": {
       "title": "Your booking",
@@ -299,7 +301,8 @@
       "submitFailed": "Something went wrong on our side. Please try again.",
       "networkError": "No connection. Check your signal and try again.",
       "needVerification": "Verify your mobile number to continue.",
-      "phoneNotVerified": "Your number needs verifying again. Please request a new code."
+      "phoneNotVerified": "Your number needs verifying again. Please request a new code.",
+      "needTerms": "Please agree to the terms and conditions"
     },
     "otp": {
       "intro": "We will send a 4-digit code to this number on WhatsApp.",
@@ -799,7 +802,12 @@
       "areaEn": "English name",
       "areaAr": "Arabic name",
       "areaAdd": "Add an area",
-      "areaRemove": "Remove this area"
+      "areaRemove": "Remove this area",
+      "terms": "Terms & conditions",
+      "termsHint": "Shown at /terms and linked from the booking form. Plain text — leave a blank line between paragraphs. Clearing the English text removes the agreement tick from the booking form.",
+      "termsEn": "English",
+      "termsAr": "Arabic",
+      "termsArHint": "Optional. Left empty, Arabic customers see the English text."
     },
     "admins": {
       "title": "Back-office access",
@@ -882,5 +890,12 @@
     "busyTitle": "Too many attempts",
     "busyBody": "Wait a moment and open the link again.",
     "language": "العربية"
+  },
+  "terms": {
+    "title": "Terms & conditions",
+    "metaDescription": "The terms that apply to a YourWaves booking.",
+    "empty": "Our terms have not been published yet. Please contact us before booking if you have questions.",
+    "englishOnly": "These terms are currently available in English only.",
+    "back": "Back to home"
   }
 }

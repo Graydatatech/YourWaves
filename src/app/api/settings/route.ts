@@ -1,6 +1,7 @@
 import { getSettings } from "@/db/queries";
 import { normaliseTime } from "@/lib/dates";
 import { toServiceAreas } from "@/lib/booking/serviceArea";
+import { hasTerms } from "@/lib/booking/terms";
 
 /**
  * GET /api/settings
@@ -58,6 +59,14 @@ export async function GET() {
       // [{en, ar}] — the booking form labels the chip in the reader's language
       // and stores the English name (see @/lib/booking/serviceArea).
       serviceAreas: toServiceAreas(settings.service_areas),
+      /**
+       * Whether there is anything to agree TO — not the text itself, which can
+       * run to pages and belongs on /terms rather than in the payload of every
+       * booking form. The wizard renders the agreement tick only when this is
+       * true: a checkbox linking to an empty page asks the customer to accept
+       * terms that do not exist.
+       */
+      termsAvailable: await hasTerms(),
       timeZone: "Asia/Qatar",
     },
     {

@@ -630,6 +630,8 @@ export async function getAdminSettings(
         hold_minutes: number;
         admin_notification_emails: string[];
         service_areas: unknown;
+        terms_en: string | null;
+        terms_ar: string | null;
         updated_at: string;
       }[]
     >`SELECT * FROM settings WHERE id = 1`;
@@ -648,6 +650,10 @@ export async function getAdminSettings(
       // Tolerates the pre-0012 text[] shape, so a database mid-migration
       // renders an editable list rather than throwing on the settings screen.
       serviceAreas: toServiceAreas(row.service_areas),
+      // `?? ""` tolerates a database that has not run migration 0014 yet, so
+      // the settings screen renders empty boxes instead of throwing.
+      termsEn: row.terms_en ?? "",
+      termsAr: row.terms_ar ?? "",
       updatedAt: new Date(row.updated_at).toISOString(),
     };
   });

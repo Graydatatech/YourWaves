@@ -3,6 +3,7 @@ import { bookingRequestSchema, toE164 } from "@/lib/booking/schema";
 import { createHold, type HoldErrorCode } from "@/lib/booking/holds";
 import { OTP_COOKIE_NAME, verifyOtpToken } from "@/lib/otp/token";
 import { BOOKING_FORM } from "@/lib/booking/formConfig";
+import { hasTerms } from "@/lib/booking/terms";
 
 const NO_STORE = { "Cache-Control": "no-store" } as const;
 
@@ -90,6 +91,27 @@ export async function POST(request: Request) {
         { status: 403, headers: NO_STORE },
       );
     }
+  }
+
+  /**
+   * --- The terms tick ----------------------------------------------------
+   *
+   * Asked of the DATABASE, not of the request. The client tells us whether it
+   * rendered a checkbox; that is a hint about what the customer saw, not a fact
+   * about what is required, and a request that simply omits `termsAccepted`
+   * must not thereby escape the requirement.
+   *
+   * Only enforced when terms actually exist. A business that has not written
+   * them yet gets a booking form with no tick and a server that does not
+   * demand one — the same both-sides-agree property as the phone verification
+   * flag above, and for the same reason: a gate the UI cannot satisfy refuses
+   * every customer.
+   */
+  if ((await hasTerms()) && draft.termsAccepted !== true) {
+    return Response.json(
+      { error: "terms_not_accepted" },
+      { status: 422, headers: NO_STORE },
+    );
   }
 
   // --- Claim the date ----------------------------------------------------

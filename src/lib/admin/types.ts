@@ -172,5 +172,8 @@ export type AdminSettings = {
   adminNotificationEmails: string[];
   /** Bilingual since 0012; the English name is the canonical value. */
   serviceAreas: ServiceArea[];
+  /** Terms & conditions, plain text. Empty English hides the agreement tick. */
+  termsEn: string;
+  termsAr: string;
   updatedAt: string;
 };

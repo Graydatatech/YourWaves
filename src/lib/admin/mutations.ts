@@ -314,6 +314,8 @@ export type SettingsPatch = {
   holdMinutes?: number;
   serviceAreas?: ServiceArea[];
   adminNotificationEmails?: string[];
+  termsEn?: string;
+  termsAr?: string;
 };
 
 /**
@@ -337,6 +339,8 @@ const SETTINGS_COLUMNS: Record<keyof SettingsPatch, string> = {
   holdMinutes: "hold_minutes",
   serviceAreas: "service_areas",
   adminNotificationEmails: "admin_notification_emails",
+  termsEn: "terms_en",
+  termsAr: "terms_ar",
 };
 
 /**

@@ -380,6 +380,21 @@ export const settings = pgTable("settings", {
     .notNull()
     .default([]),
 
+  /**
+   * Terms & conditions, edited from the back office (migration 0014).
+   *
+   * Plain text, not HTML: an admin types into a textarea and the public page
+   * renders paragraph-per-blank-line. Accepting markup here would mean an
+   * admin could inject script into a customer-facing page, and a rich editor
+   * is not what "type the terms in" needs.
+   *
+   * Empty English means the booking form shows no agreement tick at all —
+   * asking someone to agree to nothing is worse than not asking.
+   */
+  termsEn: text("terms_en").notNull().default(""),
+  /** Empty Arabic falls back to the English text rather than showing nothing. */
+  termsAr: text("terms_ar").notNull().default(""),
+
   updatedAt: timestamp("updated_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

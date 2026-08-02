@@ -30,6 +30,17 @@ const patchSchema = z.object({
     .array(z.string().trim().email())
     .max(20)
     .optional(),
+  /**
+   * Terms & conditions, PLAIN TEXT. 20k is roughly eight pages — generous for
+   * real terms, and a bound, because this ends up on a public page and an
+   * unbounded text column reachable from a form is a way to fill a database.
+   *
+   * Not sanitised, because it is never rendered as HTML: the public page splits
+   * it on blank lines and prints paragraphs. Accepting markup would let an
+   * admin put script on a customer-facing page.
+   */
+  termsEn: z.string().max(20_000).optional(),
+  termsAr: z.string().max(20_000).optional(),
 });
 
 export async function GET() {
