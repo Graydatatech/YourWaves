@@ -169,6 +169,162 @@ async function checkout() {
   }
 }
 
+/**
+ * Tries several canonical-string constructions against the sandbox and reports
+ * which one SkipCash accepts.
+ *
+ * "Signature does not match!" is a single error covering a large space of
+ * possible causes, and SkipCash tells you nothing about which. The alternative
+ * to this is one deploy per hypothesis, which is a very slow way to answer a
+ * question that is really just "which fields does their end hash".
+ *
+ * The variants are not guesses in the dark — each corresponds to a documented
+ * example that presumably works for somebody:
+ *
+ *   as-app        every documented field, empties included, plus the unsigned
+ *                 ReturnUrl/Lang in the body. What src/lib/payments/skipcash.ts
+ *                 currently sends, and what the Node.js guide shows.
+ *   no-extras     the same, but with NOTHING unsigned in the body. Isolates the
+ *                 possibility that their rebuild hashes the whole body rather
+ *                 than a fixed field list.
+ *   non-empty     only fields with a value, signed and sent. If their rebuild
+ *                 skips empty values, ours must too — our string would say
+ *                 "Street=,City=" where theirs says nothing at all.
+ *   php-subset    exactly the eight fields the PHP guide signs, address fields
+ *                 and Custom1 omitted entirely.
+ *
+ * Each run creates a QAR 1.00 sandbox payment that nobody pays. Harmless there;
+ * do not point this at production.
+ */
+async function variants() {
+  requireConfig(["apiUrl", "keyId", "secretKey"]);
+
+  if (cfg.apiUrl === PRODUCTION_URL) {
+    console.error(
+      "\n✗ Refusing to run variants against PRODUCTION — this creates several\n" +
+        "  real payment records. Point SKIPCASH_API_URL at the sandbox.",
+    );
+    process.exit(1);
+  }
+
+  const base = (reference) => [
+    ["Uid", randomUUID()],
+    ["KeyId", cfg.keyId],
+    ["Amount", "1.00"],
+    ["FirstName", "Probe"],
+    ["LastName", "Test"],
+    ["Phone", "+97455000000"],
+    ["Email", "probe@example.com"],
+    ["Street", ""],
+    ["City", ""],
+    ["State", ""],
+    ["Country", "QA"],
+    ["PostalCode", ""],
+    ["TransactionId", reference],
+    ["Custom1", reference],
+  ];
+
+  const PHP_KEYS = new Set([
+    "Uid", "KeyId", "Amount", "FirstName", "LastName", "Phone", "Email",
+    "TransactionId",
+  ]);
+
+  const shapes = [
+    {
+      name: "as-app",
+      note: "all fields incl. empties, + unsigned ReturnUrl/Lang",
+      build: (f) => ({
+        signed: f,
+        body: {
+          ...Object.fromEntries(f),
+          ReturnUrl: "https://example.com/return",
+          Lang: "en",
+        },
+      }),
+    },
+    {
+      name: "no-extras",
+      note: "all fields incl. empties, body === signed fields exactly",
+      build: (f) => ({ signed: f, body: Object.fromEntries(f) }),
+    },
+    {
+      name: "non-empty",
+      note: "empty fields omitted from BOTH signature and body",
+      build: (f) => {
+        const kept = f.filter(([, v]) => v !== "");
+        return { signed: kept, body: Object.fromEntries(kept) };
+      },
+    },
+    {
+      name: "php-subset",
+      note: "only the eight fields the PHP guide signs",
+      build: (f) => {
+        const kept = f.filter(([k]) => PHP_KEYS.has(k));
+        return { signed: kept, body: Object.fromEntries(kept) };
+      },
+    },
+  ];
+
+  console.log(`\nTrying ${shapes.length} signature shapes against ${cfg.apiUrl}\n`);
+
+  let winner = null;
+
+  for (const shape of shapes) {
+    const reference = `YW-VAR-${Date.now().toString().slice(-6)}`;
+    const { signed, body } = shape.build(base(reference));
+    const signature = sign(signed, cfg.secretKey);
+
+    let status = "—";
+    let message = "";
+    try {
+      const response = await fetch(`${cfg.apiUrl}/api/v1/payments`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: signature,
+        },
+        body: JSON.stringify(body),
+      });
+      status = String(response.status);
+      const parsed = await response.json().catch(() => ({}));
+      if (response.ok && parsed?.resultObj?.payUrl) {
+        message = "✓ ACCEPTED";
+        winner = { shape, payUrl: parsed.resultObj.payUrl, id: parsed.resultObj.id };
+      } else {
+        message = parsed?.errorMessage ?? JSON.stringify(parsed).slice(0, 90);
+      }
+    } catch (error) {
+      message = `request failed: ${error.message}`;
+    }
+
+    console.log(`  ${shape.name.padEnd(12)} HTTP ${status.padEnd(4)} ${message}`);
+    console.log(`  ${"".padEnd(12)} ${shape.note}`);
+    console.log(`  ${"".padEnd(12)} signed: ${canonical(signed).slice(0, 150)}`);
+    console.log();
+
+    if (winner) break;
+  }
+
+  if (winner) {
+    console.log(
+      `✓ "${winner.shape.name}" is the shape SkipCash accepts.\n` +
+        `  payUrl      ${winner.payUrl}\n` +
+        `  providerRef ${winner.id}\n\n` +
+        `  If that is not "as-app", src/lib/payments/skipcash.ts needs to build\n` +
+        `  its field list the same way.`,
+    );
+  } else {
+    console.log(
+      "✗ None of the shapes was accepted.\n\n" +
+        "  That points away from the field list and at the KEY itself. Check\n" +
+        "  SKIPCASH_SECRET_KEY is the payment key rather than the webhook key,\n" +
+        "  that it is complete (no truncation, no stray newline from a paste),\n" +
+        "  and that SKIPCASH_KEY_ID belongs to the same merchant account.",
+    );
+    process.exitCode = 1;
+  }
+}
+
 async function status() {
   requireConfig(["apiUrl", "clientId"]);
   const [providerRef] = args;
@@ -263,6 +419,9 @@ switch (command) {
   case "checkout":
     await checkout();
     break;
+  case "variants":
+    await variants();
+    break;
   case "status":
     await status();
     break;
@@ -276,6 +435,8 @@ switch (command) {
         "",
         "  config                              show what is configured",
         "  checkout                            create a QAR 1.00 sandbox checkout",
+        "  variants                            try each signature shape, report which",
+        "                                      one SkipCash accepts (sandbox only)",
         "  status <providerRef>                read a payment back",
         "  webhook <paymentId> <amount> <statusId> [transactionId] [custom1] [visaId]",
         "                                      compute a callback signature and",
