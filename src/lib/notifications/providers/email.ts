@@ -18,6 +18,19 @@ export type OutboundEmail = {
   /** Always sent alongside the HTML. Some corporate clients show only this. */
   text: string;
   replyTo?: string;
+  /**
+   * Stable per MESSAGE, not per attempt — the notification row's id.
+   *
+   * §4g makes enqueueing idempotent with a unique index, and increments
+   * `attempts` at claim time so a crash consumes one. Neither protects the SEND
+   * itself: if the provider accepts the mail and the response is lost to a
+   * timeout, the worker sees a retryable failure and sends again, and the
+   * customer gets their booking confirmation twice.
+   *
+   * Resend deduplicates on this for 24 hours, which comfortably covers the
+   * 1m/5m/15m/1h/6h backoff over five attempts.
+   */
+  idempotencyKey?: string;
 };
 
 export interface EmailProvider {
@@ -52,6 +65,11 @@ export class ResendEmailProvider implements EmailProvider {
         headers: {
           Authorization: `Bearer ${this.config.apiKey}`,
           "Content-Type": "application/json",
+          // Only when we have one; Resend rejects an empty value rather than
+          // ignoring it.
+          ...(message.idempotencyKey
+            ? { "Idempotency-Key": message.idempotencyKey }
+            : {}),
         },
         body: JSON.stringify({
           from: this.config.from,

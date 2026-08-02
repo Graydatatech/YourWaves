@@ -75,6 +75,11 @@ export async function deliver(
         subject: message.subject,
         html: message.html,
         text: message.text,
+        // The notification row's id: stable across every retry of THIS
+        // message, and different for every other one. A send that succeeded
+        // but whose response was lost is deduplicated by the provider instead
+        // of reaching the customer twice.
+        idempotencyKey: row.id,
       });
       await markSent(row.id, result.providerRef ?? null);
       return { outcome: "sent" };
