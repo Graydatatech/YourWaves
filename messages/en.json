@@ -860,6 +860,24 @@
         "not_found": "That account no longer exists.",
         "failed": "Something went wrong. Please try again."
       }
+    },
+    "gallery": {
+      "title": "Gallery photos",
+      "hint": "Shown in the 'Recent days out' section. Order decides the tile shape — the first photo gets the tall tile. Removing every photo restores the placeholder art.",
+      "add": "Add a photo",
+      "remove": "Remove",
+      "moveUp": "Move up",
+      "moveDown": "Move down",
+      "position": "Photo {number}",
+      "altEn": "Description (English)",
+      "altAr": "Description (Arabic)",
+      "errors": {
+        "unsupported": "That file type is not supported. Use a JPEG, PNG or WebP.",
+        "unreadable": "That image could not be read. If it came from an iPhone, try exporting it as JPEG first.",
+        "too_large": "That image is still too large after compression. Try a smaller one.",
+        "uploadFailed": "The upload failed. Please try again.",
+        "saveFailed": "The gallery could not be saved. Please try again."
+      }
     }
   },
   "jobSheet": {

@@ -634,6 +634,7 @@ export async function getAdminSettings(
         terms_ar: string | null;
         footer: Record<string, string> | null;
         faq: unknown;
+        gallery: unknown;
         updated_at: string;
       }[]
     >`SELECT * FROM settings WHERE id = 1`;
@@ -658,6 +659,7 @@ export async function getAdminSettings(
       termsAr: row.terms_ar ?? "",
       footer: row.footer ?? {},
       faq: Array.isArray(row.faq) ? row.faq : [],
+      gallery: Array.isArray(row.gallery) ? row.gallery : [],
       updatedAt: new Date(row.updated_at).toISOString(),
     };
   });

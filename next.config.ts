@@ -3,6 +3,21 @@ import createNextIntlPlugin from "next-intl/plugin";
 
 const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 
+/**
+ * The Supabase Storage hostname, if configured. Parsed rather than string-
+ * matched so a malformed value fails here instead of producing a pattern that
+ * silently matches nothing.
+ */
+const supabaseHost = (() => {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  if (!url) return null;
+  try {
+    return new URL(url).hostname;
+  } catch {
+    return null;
+  }
+})();
+
 const nextConfig: NextConfig = {
   reactStrictMode: true,
 
@@ -23,13 +38,35 @@ const nextConfig: NextConfig = {
     // to protect against, and the default 60s means a returning visitor
     // re-validates imagery that cannot have changed. One year.
     minimumCacheTTL: 31_536_000,
+    /**
+     * EXACTLY ONE remote host: this project's Supabase Storage.
+     *
+     * Phase 10 left this empty and said the optimiser must never be pointed at
+     * a remote host. That reasoning was about an OPEN proxy — a wildcard here
+     * lets anyone pass any URL through our optimiser, which is a bandwidth bill
+     * and an SSRF surface. Naming one hostname, derived from our own
+     * environment rather than hardcoded, is not that: nothing an attacker
+     * controls can be fetched, and the gallery images have to come from
+     * somewhere once they are admin-uploaded.
+     *
+     * Derived from NEXT_PUBLIC_SUPABASE_URL so it cannot drift from the URL the
+     * gallery actually builds. Absent, the array is empty and remote images
+     * simply do not optimise — the site still renders.
+     */
+    remotePatterns: supabaseHost
+      ? [
+          {
+            protocol: "https" as const,
+            hostname: supabaseHost,
+            pathname: "/storage/v1/object/public/**",
+          },
+        ]
+      : [],
     // Deliberately NOT set: `qualities` (nothing overrides the default 75, and
     // pinning it is a Next-16-specific key this phase could not verify against
-    // the installed version), `remotePatterns` (empty is the default, and the
-    // optimiser must never be pointed at a remote host — an open image proxy is
-    // a bandwidth bill and an SSRF surface), and `dangerouslyAllowSVG` (an SVG
-    // is a script; serving attacker-supplied markup from our own origin is the
-    // whole reason that flag is named the way it is).
+    // the installed version) and `dangerouslyAllowSVG` (an SVG is a script;
+    // serving attacker-supplied markup from our own origin is the whole reason
+    // that flag is named the way it is).
   },
 
   async headers() {

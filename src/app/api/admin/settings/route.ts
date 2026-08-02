@@ -81,6 +81,22 @@ const patchSchema = z.object({
     )
     .max(40)
     .optional(),
+
+  /**
+   * Gallery, in display order. `path` is a bare uuid.ext — the shape the upload
+   * route creates — so a hand-written request cannot point the page at an
+   * arbitrary object, or at a traversal out of the bucket.
+   */
+  gallery: z
+    .array(
+      z.object({
+        path: z.string().regex(/^[0-9a-f-]{36}\.(jpg|png|webp)$/i),
+        altEn: z.string().max(300),
+        altAr: z.string().max(300),
+      }),
+    )
+    .max(24)
+    .optional(),
 });
 
 export async function GET() {

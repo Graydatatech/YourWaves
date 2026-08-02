@@ -120,6 +120,13 @@
       "when": 1785075081658,
       "tag": "0016_faq_content",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1785075081659,
+      "tag": "0017_gallery_images",
+      "breakpoints": true
     }
   ]
 }

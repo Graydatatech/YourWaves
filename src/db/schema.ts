@@ -422,6 +422,16 @@ export const settings = pgTable("settings", {
     .notNull()
     .default([]),
 
+  /**
+   * Gallery images (migration 0017), in display order. `path` is the object
+   * path inside the Supabase Storage bucket — never a full URL, so a restore
+   * into another project does not break every image.
+   */
+  gallery: jsonb("gallery")
+    .$type<{ path: string; altEn: string; altAr: string }[]>()
+    .notNull()
+    .default([]),
+
   updatedAt: timestamp("updated_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

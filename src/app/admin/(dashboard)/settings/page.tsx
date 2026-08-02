@@ -10,6 +10,7 @@ import { readPaymentsStatus } from "@/lib/payments/status";
 import { SettingsForm } from "./SettingsForm";
 import { PaymentsPanel } from "./PaymentsPanel";
 import { AdminsPanel } from "./AdminsPanel";
+import { GalleryPanel } from "./GalleryPanel";
 
 export const dynamic = "force-dynamic";
 
@@ -42,6 +43,11 @@ export default async function AdminSettingsPage() {
        * boundary. The panel receives presence booleans and four-character
        * hints, which is all it can ever render.
        */}
+      {/* Its own panel and its own Save: uploading a file is a different kind
+          of action from typing a price, and sharing a Save button would let an
+          admin adding a photo commit a half-edited day rate. */}
+      <GalleryPanel images={settings.gallery} />
+
       <PaymentsPanel status={readPaymentsStatus()} />
 
       {/* Back-office accounts. Replaces scripts/create-admin.mjs for everything

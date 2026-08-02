@@ -109,6 +109,9 @@ const API_WRITES = [
    * project: it grants the same access the caller has. If this ever answered
    * anything but a refusal, anyone could grant themselves the dashboard.
    */
+  // Uploading to the public gallery bucket. Unauthenticated access here would
+  // let anyone put arbitrary images on the marketing site.
+  ["DELETE", "/api/admin/gallery?path=00000000-0000-4000-8000-000000000000.jpg", null],
   ["POST", "/api/admin/admins", { email: "intruder@example.com" }],
   ["DELETE", "/api/admin/admins/00000000-0000-4000-8000-000000000000", null],
 ];

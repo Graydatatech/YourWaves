@@ -1,5 +1,7 @@
 import Image from "next/image";
-import { useTranslations } from "next-intl";
+import { getLocale, getTranslations } from "next-intl/server";
+import { isLocale, routing } from "@/i18n/routing";
+import { getGallery, TILE_RATIOS } from "@/lib/site/gallery";
 import gallery1 from "../../../public/media/gallery-1.jpg";
 import gallery2 from "../../../public/media/gallery-2.jpg";
 import gallery3 from "../../../public/media/gallery-3.jpg";
@@ -29,8 +31,29 @@ const TILES = [
   { src: gallery6, ratio: "4/3" },
 ] as const;
 
-export function Gallery() {
-  const t = useTranslations("gallery");
+export async function Gallery() {
+  const t = await getTranslations("gallery");
+
+  const rawLocale = await getLocale();
+  const locale = isLocale(rawLocale) ? rawLocale : routing.defaultLocale;
+
+  /**
+   * Admin uploads if there are any, the committed placeholder art otherwise.
+   * The fallback keeps its static imports, so an unconfigured site still gets
+   * build-time blur placeholders and content-hashed URLs — an uploaded image
+   * can have neither, which is the honest trade for being editable.
+   */
+  const tiles = await getGallery(
+    locale,
+    TILES.map((tile, index) => ({
+      src: tile.src.src,
+      alt: t("imageAlt", { number: index + 1 }),
+      ratio: TILE_RATIOS[index] ?? tile.ratio,
+      // The static import carries this; extracting `.src` alone would drop it
+      // and `placeholder="blur"` would then throw for a missing blurDataURL.
+      blurDataURL: tile.src.blurDataURL,
+    })),
+  );
 
   return (
     <section id="gallery" className="section-y">
@@ -44,9 +67,9 @@ export function Gallery() {
         {/* CSS columns give masonry without JS. Column flow follows the
             document direction, so tiles fill right-to-left in Arabic. */}
         <div className="mt-12 [columns:260px] [column-gap:1rem]">
-          {TILES.map((tile, index) => (
+          {tiles.map((tile, index) => (
             <figure
-              key={tile.src.src}
+              key={tile.src}
               className="rounded-card mb-4 break-inside-avoid overflow-hidden"
             >
               <div
@@ -55,14 +78,19 @@ export function Gallery() {
               >
                 <Image
                   src={tile.src}
-                  alt={t("imageAlt", { number: index + 1 })}
+                  alt={tile.alt}
                   fill
                   loading="lazy"
                   sizes="(min-width: 1280px) 25vw, (min-width: 640px) 45vw, 92vw"
-                  // Six lazy tiles below the fold: the blur is what stops the
-                  // gallery reading as six grey holes while they stream in on
-                  // 4G. It costs no extra request — it is inlined base64.
-                  placeholder="blur"
+                  /**
+                   * The blur is only available for the committed art, where a
+                   * static import gives it at build time. An uploaded image is
+                   * a URL — there is nothing to generate a placeholder from
+                   * without decoding it on the server, which is a cost paid on
+                   * every render for a below-the-fold tile.
+                   */
+                  placeholder={tile.blurDataURL ? "blur" : "empty"}
+                  blurDataURL={tile.blurDataURL}
                   className="object-cover"
                 />
               </div>

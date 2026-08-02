@@ -36,6 +36,19 @@ export type FaqItem = {
   answerAr: string;
 };
 
+/**
+ * One gallery image.
+ *
+ * `path` is the Storage object path, not a URL — see migration 0017. Alt text
+ * is per language and required in English: "photo 3" is what the site said
+ * before, which is useless to a screen reader and to image search alike.
+ */
+export type GalleryImage = {
+  path: string;
+  altEn: string;
+  altAr: string;
+};
+
 export type FooterContent = {
   taglineEn?: string;
   taglineAr?: string;
@@ -213,5 +226,6 @@ export type AdminSettings = {
   termsAr: string;
   footer: FooterContent;
   faq: FaqItem[];
+  gallery: GalleryImage[];
   updatedAt: string;
 };
