@@ -232,7 +232,8 @@ export type StepError =
   | "needName"
   | "invalidPhone"
   | "invalidEmail"
-  | "needVerification";
+  | "needVerification"
+  | "needTerms";
 
 type StepValidator = (draft: DraftState) => StepError | null;
 
