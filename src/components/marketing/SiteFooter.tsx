@@ -12,7 +12,9 @@ export function SiteFooter() {
   const year = new Date().getFullYear();
 
   return (
-    <footer className="bg-footer text-white/70">
+    // `on-dark`: --accent-strong is 3.04:1 on the footer, which is inside
+    // rounding distance of failing 2.4.11. --accent-light is 12.6:1.
+    <footer className="bg-footer on-dark text-white/70">
       <div className="shell py-[clamp(40px,7vw,72px)]">
         <div className="grid gap-10 md:grid-cols-3">
           {/* Brand ---------------------------------------------------- */}

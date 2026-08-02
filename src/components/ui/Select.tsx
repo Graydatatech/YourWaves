@@ -27,9 +27,9 @@ export function Select({
           "tap-target rounded-input border-border bg-surface w-full appearance-none border",
           "text-ink py-3 ps-4 pe-11 text-[16px]",
           "transition-colors outline-none",
-          "focus-visible:border-accent focus-visible:outline-accent focus-visible:outline-2 focus-visible:outline-offset-0",
+          "focus-visible:border-accent focus-visible:outline-focus focus-visible:outline-2 focus-visible:outline-offset-0",
           "disabled:bg-ink/5 disabled:text-muted-3 disabled:cursor-not-allowed",
-          invalid && "border-red-500",
+          invalid && "border-danger",
           className,
         )}
         {...props}

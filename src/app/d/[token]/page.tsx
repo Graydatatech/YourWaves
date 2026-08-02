@@ -70,7 +70,7 @@ export default async function DispatchPage({
         className="mx-auto flex min-h-dvh max-w-md flex-col justify-center px-6 text-center"
       >
         <h1 className="text-2xl font-extrabold">{title}</h1>
-        <p className="pt-3 text-lg text-[#4a6577]">{body}</p>
+        <p className="pt-3 text-lg text-[#425a6b]">{body}</p>
       </main>
     );
   }
@@ -103,7 +103,7 @@ export default async function DispatchPage({
       >
         <header className="flex items-start justify-between gap-3">
           <div>
-            <p className="text-sm font-bold tracking-[0.14em] text-[#0a7a8c] uppercase">
+            <p className="text-sm font-bold tracking-[0.14em] text-[#097182] uppercase">
               {t("reference")}
             </p>
             {/* The reference is quoted on the phone to the office, so it is
@@ -133,28 +133,44 @@ export default async function DispatchPage({
               {t("today")}
             </p>
           ) : null}
-          <p className={cn("text-lg font-bold", !isToday && "text-[#4a6577]")}>
+          <p className={cn("text-lg font-bold", !isToday && "text-[#425a6b]")}>
             {formatFullDate(job.bookingDate, locale)}
           </p>
           <p className="pt-2 text-sm font-bold tracking-[0.12em] uppercase opacity-80">
             {t("arriveBy")}
           </p>
-          <p dir="ltr" className="text-[44px] leading-none font-extrabold tabular-nums">
+          {/* `auto`, not `ltr`. formatTime pins Latin DIGITS but leaves the
+              meridiem in the locale's own script, so the Arabic string is
+              "8:00 ص" — its first strong character is Arabic and the run is
+              therefore RTL. Forcing it LTR moved the ص to the end, which is
+              the same class of bug as the "km/h 45" hero described in
+              CLAUDE.md §4. This is the largest number on the page and the one
+              a driver reads at a glance. */}
+          <p
+            dir="auto"
+            className="text-[44px] leading-none font-extrabold tabular-nums"
+          >
             {formatTime(job.arrivalTime, locale)}
           </p>
           <p className="pt-2 text-sm opacity-80">
-            {t("startTime")}: {formatTime(job.preferredStart, locale)}
+            {/* Isolated because it sits INSIDE a sentence: without it the colon
+                is a neutral character between an Arabic label and a
+                digit-leading time, and the bidi algorithm is free to move it. */}
+            {t("startTime")}:{" "}
+            <span dir="auto" className="inline-block [unicode-bidi:isolate]">
+              {formatTime(job.preferredStart, locale)}
+            </span>
           </p>
         </section>
 
         {/* WHERE. Navigate is the primary action of the whole page. */}
         <section className="flex flex-col gap-2">
-          <p className="text-sm font-bold tracking-[0.12em] text-[#4a6577] uppercase">
+          <p className="text-sm font-bold tracking-[0.12em] text-[#425a6b] uppercase">
             {t("address")}
           </p>
           <p className="text-xl leading-snug font-bold">{job.addressLine}</p>
           {job.area || job.city ? (
-            <p className="text-lg text-[#4a6577]">
+            <p className="text-lg text-[#425a6b]">
               {[job.area, job.city].filter(Boolean).join(", ")}
             </p>
           ) : null}
@@ -183,14 +199,14 @@ export default async function DispatchPage({
 
         {/* WHO. Both contact routes, full width. */}
         <section className="flex flex-col gap-2">
-          <p className="text-sm font-bold tracking-[0.12em] text-[#4a6577] uppercase">
+          <p className="text-sm font-bold tracking-[0.12em] text-[#425a6b] uppercase">
             {t("customer")}
           </p>
           <p className="text-xl font-bold">{job.customerName}</p>
           <div className="flex gap-2">
             <a
               href={`tel:${job.customerPhone.replace(/\s/g, "")}`}
-              className="flex min-h-14 flex-1 items-center justify-center rounded-2xl bg-[#0a7a8c] px-4 text-lg font-extrabold text-white"
+              className="flex min-h-14 flex-1 items-center justify-center rounded-2xl bg-[#097182] px-4 text-lg font-extrabold text-white"
             >
               {t("call")}
             </a>
@@ -220,7 +236,10 @@ export default async function DispatchPage({
           <p className="text-xl font-extrabold">
             {job.isPaid ? t("paid") : t("collect")}
           </p>
-          <p dir="ltr" className="text-lg font-bold tabular-nums">
+          {/* Same reason as the arrival time: formatMoney renders the currency
+              as "ر.ق." in Arabic, so the run resolves RTL from its own content.
+              This is the figure a driver may be collecting in cash. */}
+          <p dir="auto" className="text-lg font-bold tabular-nums">
             {formatMoney(job.priceTotal, job.currency, locale)}
           </p>
         </section>
@@ -237,14 +256,14 @@ export default async function DispatchPage({
         ) : null}
 
         <section className="rounded-2xl border border-[#dde7ee] px-4 py-4">
-          <p className="text-sm font-bold tracking-[0.12em] text-[#4a6577] uppercase">
+          <p className="text-sm font-bold tracking-[0.12em] text-[#425a6b] uppercase">
             {t("equipment")}
           </p>
           <p className="pt-1 text-base leading-snug">{t("equipmentBody")}</p>
         </section>
 
         <section className="flex flex-col gap-2 pt-2">
-          <p className="text-sm font-bold tracking-[0.12em] text-[#4a6577] uppercase">
+          <p className="text-sm font-bold tracking-[0.12em] text-[#425a6b] uppercase">
             {t("statusTitle")}
           </p>
           <JobActions

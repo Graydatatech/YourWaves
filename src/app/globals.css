@@ -11,17 +11,48 @@
   --accent: #0b8fa3;
   --accent-light: #7ff2ea;
   /* Accessible variant of --accent for text below 18.66px.
-     --accent itself is 3.84:1 on white, which fails WCAG AA for small text;
-     this is 5.03:1. The brand colour is unchanged — large text, icons, fills
-     and borders still use --accent. Use --accent-strong for small copy. */
-  --accent-strong: #0a7a8c;
+     --accent itself is 3.84:1 on WHITE and 3.12:1 on the page gradient, so it
+     fails AA for small text on both. This is 5.68:1 on white and 4.63:1 on the
+     darkest thing text can sit on. The brand colour is unchanged — large text,
+     icons, fills and borders still use --accent. */
+  --accent-strong: #097182;
 
-  /* Ink & text */
+  /* Ink & text -------------------------------------------------------------
+     Phase 10 re-audit. The old ramp (#4a6577 / #587488 / #5f7c8e) was measured
+     against WHITE, but most text on this site does not sit on white: <html>
+     carries --page-background, whose darkest stop is #e1edf4 with a radial
+     peaking at #d3ecf6. Against the background actually painted behind it,
+     --muted-2 fell to 4.13:1 and --muted-3 to 3.70:1 — both AA failures that a
+     white-background audit cannot see.
+
+     The ramp below is solved against #e1edf4 and verified against #d3ecf6, so
+     every step clears 4.5:1 on every surface in the design:
+
+       token        white   #e9f3f8  #e1edf4  #d3ecf6
+       --muted      7.23    6.41     6.06     5.88
+       --muted-2    6.20    5.50     5.20     5.05
+       --muted-3    5.69    5.05     4.77     4.63
+
+     The bottom of the ramp is deliberately a little above 4.5 rather than on
+     it. An earlier pass solved --muted-3 to exactly 4.50 and the check failed
+     on floating-point rounding — a token that needs the audit to round in its
+     favour is not one to ship.
+
+     `pnpm check:contrast` recomputes this table and fails on a regression. */
   --ink: #0b2a3d;
   --ink-deep: #04141f;
-  --muted: #4a6577;
-  --muted-2: #587488;
-  --muted-3: #5f7c8e;
+  --muted: #425a6b;
+  --muted-2: #4c6475;
+  --muted-3: #516a7a;
+
+  /* Error text. Tailwind's red-600 (#dc2626) is 4.83:1 on white but 4.05:1 on
+     the page gradient, so form errors — the copy a user most needs to read —
+     failed AA exactly where they appear. This is 5.70:1 on white, 4.78:1 on the
+     gradient, and 4.99:1 on --danger-surface, the tint it sits on inside an
+     alert box. */
+  --danger: #c82020;
+  /* Tint behind an error message or an invalid field. */
+  --danger-surface: #fdeceb;
 
   /* Surfaces */
   --surface: #ffffff;
@@ -37,12 +68,20 @@
   --radius-input: 14px;
   --radius-pill: 999px;
 
-  /* Composite backgrounds */
+  /* Composite backgrounds ---------------------------------------------------
+     The radial is the page's light source: a soft bloom off the top corner on
+     the side the reader's eye starts from. `--glow-x` is what mirrors it — see
+     the [dir="rtl"] block below. The linear underneath is purely vertical and
+     needs no mirroring. */
+  --glow-x: 82%;
   --page-background:
-    radial-gradient(1100px 640px at 82% -8%, #d3ecf6 0%, transparent 58%),
+    radial-gradient(1100px 640px at var(--glow-x) -8%, #d3ecf6 0%, transparent 58%),
     linear-gradient(180deg, #f5fafd 0%, #e9f3f8 62%, #e1edf4 100%);
+  /* Diagonal hatch. `--hatch-angle` mirrors so the stripes lean with the text
+     rather than against it. */
+  --hatch-angle: 135deg;
   --dark-panel: repeating-linear-gradient(
-    135deg,
+    var(--hatch-angle),
     #0a2c46 0 16px,
     #0c3654 16px 32px
   );
@@ -92,6 +131,21 @@
 }
 [dir="rtl"] {
   --slide-from: -100%;
+
+  /* Direction-dependent LIGHT, which logical properties do not cover.
+     `background-image` has no logical form: a gradient is described in physical
+     coordinates and stays put when the document mirrors. Everything else on the
+     page flips, so an unmirrored light source ends up on the side the Arabic
+     reader's eye leaves from — the layout mirrors and the lighting does not,
+     which is the specific thing that makes a translated site feel translated.
+
+     Mirrored:  the page glow (82% → 18%) and the hatch on the dark panel.
+     NOT mirrored: --brand-gradient. It fills pills, CTAs and the wordmark, and
+     it is an identity asset — the brand looks the same in both languages, the
+     same way a logo is not flipped. --summary-gradient is left alone too: at
+     160deg between two near-identical tints there is nothing to see. */
+  --glow-x: 18%;
+  --hatch-angle: 45deg;
 }
 
 /* ---------------------------------------------------------------------------
@@ -108,6 +162,13 @@
   --color-muted: var(--muted);
   --color-muted-2: var(--muted-2);
   --color-muted-3: var(--muted-3);
+  --color-danger: var(--danger);
+  --color-danger-surface: var(--danger-surface);
+  /* `outline-focus` for the components that need their own outline-offset and
+     so cannot just inherit the base :focus-visible rule. Resolving through
+     --focus-ring means those overrides still flip on a dark surface instead of
+     pinning themselves to a colour that fails there. */
+  --color-focus: var(--focus-ring, var(--accent-strong));
   --color-surface: var(--surface);
   --color-border: var(--border);
   --color-footer: var(--footer);
@@ -346,10 +407,38 @@
     text-wrap: balance;
   }
 
-  /* Never let a focus ring be invisible — accessibility floor for the project. */
+  /* Never let a focus ring be invisible — accessibility floor for the project.
+     WCAG 2.4.11 wants the indicator at 3:1 against what surrounds it. Because
+     of outline-offset the ring is painted on the SECTION background rather than
+     on the control's own fill, so one colour per section is enough — but it has
+     to be the RIGHT one per section, and no single value is good everywhere:
+
+       surface              --accent (was)   --accent-strong   --accent-light
+       page gradient             3.22              4.77              1.12
+       page radial peak          3.12              4.63              1.08
+       white card                3.84              5.68              1.33
+       footer #04202f            4.37              2.95             12.60
+       dark panel #0a2c46        3.74              2.53             10.80
+       hero scrim                4.91              3.32             14.18
+
+     --accent cleared 3:1 on all of them, so this is not a fix for a failure —
+     it is a fix for a ring that was only just visible on the surface most of
+     the page is made of. 3.12:1 is a hairline; 4.63:1 is a ring. The cost is
+     that --accent-strong is then unusable on the dark sections, where it drops
+     to 2.53 and genuinely fails — hence the split rather than a straight swap.
+
+     Light surfaces get the fallback; anything dark sets --focus-ring on the
+     container and every control inside inherits it. */
   :focus-visible {
-    outline: 2px solid var(--accent);
+    outline: 2px solid var(--focus-ring, var(--accent-strong));
     outline-offset: 2px;
+  }
+
+  /* Applied to the hero and the footer. Any future dark section needs it too —
+     `pnpm check:contrast` asserts the two ring colours against the dark
+     surfaces, but it cannot tell whether a section remembered the class. */
+  .on-dark {
+    --focus-ring: var(--accent-light);
   }
 
   ::selection {

@@ -1,1 +1,6 @@
-pnpm lint && pnpm typecheck
+# check:contrast is in here rather than only in CI because it is pure
+# arithmetic on the source files — no build, no browser, no database — so it
+# costs a fraction of a second, and because the failure it catches (a token
+# darkened past AA, or a new one added below it) is cheapest to fix in the
+# commit that introduced it.
+pnpm lint && pnpm typecheck && pnpm check:contrast

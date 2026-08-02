@@ -95,7 +95,7 @@ export function DesktopBooking({
         <p
           role="alert"
           aria-live="polite"
-          className="text-sm font-semibold text-red-600 empty:hidden"
+          className="text-sm font-semibold text-danger empty:hidden"
         >
           {!allComplete && firstProblem ? tErrors(firstProblem) : ""}
         </p>

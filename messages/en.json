@@ -178,6 +178,7 @@
   },
   "booking": {
     "kicker": "Booking",
+    "loading": "Loading the booking form…",
     "title": "Choose your day",
     "description": "Pick a date, tell us where to set up, and we will confirm within the hour.",
     "next": "Next",
@@ -717,6 +718,31 @@
       "dispatchResent": "A new link was sent. The old one no longer works.",
       "dispatchPreview": "Message preview",
       "dispatchPhotoAlt": "Completion photo"
+    },
+    "payments": {
+      "title": "Payment gateway",
+      "subtitle": "Read-only. These credentials live in the deployment environment, not in the database — changing them is a deploy, not a setting.",
+      "provider": "Provider",
+      "apiUrl": "Endpoint",
+      "envMock": "Mock — no real payments",
+      "env": {
+        "sandbox": "Sandbox",
+        "production": "Live",
+        "unknown": "Unrecognised host",
+        "not_configured": "Not configured"
+      },
+      "set": "Set",
+      "missing": "Missing",
+      "webhookUrl": "Webhook URL",
+      "webhookHint": "Register this in the SkipCash merchant portal under Credentials. Without it, paid bookings only confirm when the reconciliation job runs.",
+      "test": "Test connection",
+      "testing": "Testing…",
+      "testHint": "Creates a QAR 1.00 payment at the gateway and discards it. Nothing is written here.",
+      "testHintProduction": "This is the live gateway. The test appears in your real ledger.",
+      "testFailed": "The test could not be run. Check the server logs.",
+      "confirmTitle": "Test the live gateway?",
+      "confirmBody": "This creates a real QAR 1.00 payment record in your SkipCash account. No money moves unless someone pays it, but it will appear in your ledger.",
+      "confirmAction": "Run the test"
     },
     "settings": {
       "title": "Settings",

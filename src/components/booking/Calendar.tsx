@@ -386,7 +386,7 @@ export function Calendar({
                       "grid aspect-square min-h-11 w-full place-items-center",
                       "rounded-xl text-[15px] font-semibold tabular-nums",
                       "transition-[background-color,box-shadow,color]",
-                      "focus-visible:outline-accent focus-visible:outline-2 focus-visible:outline-offset-2",
+                      "focus-visible:outline-focus focus-visible:outline-2 focus-visible:outline-offset-2",
                       isSelected &&
                         "bg-brand text-ink-deep shadow-cta font-bold",
                       !isSelected &&

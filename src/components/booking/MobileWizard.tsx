@@ -104,7 +104,7 @@ export function MobileWizard({
         <p
           role="alert"
           aria-live="polite"
-          className="text-sm font-semibold text-red-600 empty:hidden"
+          className="text-sm font-semibold text-danger empty:hidden"
         >
           {reason ?? ""}
         </p>
@@ -126,6 +126,12 @@ export function MobileWizard({
 
           <button
             type="button"
+            // A stable hook for the QA screenshot script, which has to drive
+            // the wizard four steps deep to photograph the later ones. The
+            // label is translated and the classes are styling, so neither is
+            // something a script can select on without breaking on the next
+            // copy change.
+            data-testid="wizard-next"
             onClick={isLast ? onSubmit : next}
             disabled={blocked || submitting || (isLast && holdActive)}
             className={cn(

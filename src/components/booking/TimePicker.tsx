@@ -68,7 +68,7 @@ export function TimePicker({
             className={cn(
               "rounded-pill flex min-h-11 items-center justify-center px-3",
               "text-[15px] font-semibold whitespace-nowrap transition-colors",
-              "focus-visible:outline-accent focus-visible:outline-2 focus-visible:outline-offset-2",
+              "focus-visible:outline-focus focus-visible:outline-2 focus-visible:outline-offset-2",
               isSelected
                 ? "bg-brand text-ink-deep shadow-cta font-bold"
                 : "border-border bg-surface text-ink hover:border-accent/50 border",

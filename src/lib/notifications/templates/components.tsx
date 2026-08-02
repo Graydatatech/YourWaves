@@ -617,7 +617,10 @@ export function BulletList({
                         ...baseText,
                         fontSize: "15px",
                         lineHeight: "24px",
-                        color: email.accent,
+                        // accentStrong, not accent: this bullet is a text
+                        // glyph at 15px, so it is held to the 4.5:1 text
+                        // threshold rather than the 3:1 non-text one.
+                        color: email.accentStrong,
                         paddingTop: "4px",
                       }}
                     >

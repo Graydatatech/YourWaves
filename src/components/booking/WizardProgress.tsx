@@ -35,7 +35,7 @@ export function WizardProgress() {
                 className={cn(
                   "group flex min-h-11 w-full flex-col justify-center gap-1.5",
                   "rounded-lg px-0.5",
-                  "focus-visible:outline-accent focus-visible:outline-2",
+                  "focus-visible:outline-focus focus-visible:outline-2",
                   reachable ? "cursor-pointer" : "cursor-default",
                 )}
               >

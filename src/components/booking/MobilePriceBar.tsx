@@ -50,6 +50,10 @@ export function MobilePriceBar({
     <>
       <button
         type="button"
+        // Hook for the QA screenshot script: the summary is a bottom sheet on
+        // mobile and a sticky card above 900px, and photographing the same
+        // information in both layouts means opening the sheet.
+        data-testid="price-bar-toggle"
         onClick={() => setOpen(true)}
         aria-expanded={open}
         aria-haspopup="dialog"

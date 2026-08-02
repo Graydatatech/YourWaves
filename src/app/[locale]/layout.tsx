@@ -4,19 +4,32 @@ import { notFound } from "next/navigation";
 import { NextIntlClientProvider } from "next-intl";
 import { setRequestLocale, getMessages } from "next-intl/server";
 import { routing, isLocale, localeDirections } from "@/i18n/routing";
+import { SITE_URL } from "@/lib/seo";
 import { fontVariables } from "@/lib/fonts";
 import "../globals.css";
 
 export const metadata: Metadata = {
-  // Resolves relative OG/Twitter image paths. Falls back to localhost in dev.
-  metadataBase: new URL(
-    process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000",
-  ),
+  // Resolves every relative URL in a metadata object — OG images, canonicals,
+  // hreflang. Falls back to localhost so a build without the variable still
+  // succeeds; lib/seo.ts is the single place that fallback is defined.
+  metadataBase: new URL(SITE_URL),
   title: {
     default: "YourWaves",
     template: "%s · YourWaves",
   },
   description: "Full-day mobile flowrider rental, delivered to your villa.",
+  /**
+   * Noindex by DEFAULT, and the marketing page is the only thing under
+   * [locale] that opts back in.
+   *
+   * Written this way round on purpose. The booking success and failure pages
+   * are keyed by booking reference and name a real customer's order; the
+   * styleguide is an internal reference. Neither should ever be indexed, and
+   * relying on each of them to remember to say so is how one of them ends up
+   * in a search result. Inverting the default means a NEW page under [locale]
+   * is private until somebody deliberately publishes it.
+   */
+  robots: { index: false, follow: false },
 };
 
 export const viewport: Viewport = {

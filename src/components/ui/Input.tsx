@@ -18,9 +18,9 @@ export function Input({ className, invalid, ...props }: InputProps) {
         "tap-target rounded-input border-border bg-surface w-full border",
         "text-ink placeholder:text-muted-3 px-4 py-3 text-[16px]",
         "transition-colors outline-none",
-        "focus-visible:border-accent focus-visible:outline-accent focus-visible:outline-2 focus-visible:outline-offset-0",
+        "focus-visible:border-accent focus-visible:outline-focus focus-visible:outline-2 focus-visible:outline-offset-0",
         "disabled:bg-ink/5 disabled:text-muted-3 disabled:cursor-not-allowed",
-        invalid && "border-red-500",
+        invalid && "border-danger",
         className,
       )}
       {...props}

@@ -206,7 +206,7 @@ export function BookingResult({
       <div className="text-center" role="alert">
         <div
           aria-hidden="true"
-          className="mx-auto grid size-14 place-items-center rounded-full bg-red-100 text-red-700"
+          className="bg-danger-surface text-danger mx-auto grid size-14 place-items-center rounded-full"
         >
           <svg viewBox="0 0 24 24" className="size-7">
             <path

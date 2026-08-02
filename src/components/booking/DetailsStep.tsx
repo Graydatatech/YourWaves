@@ -80,7 +80,7 @@ export function DetailsStep({ showErrors }: DetailsStepProps) {
           id={`${nameId}-error`}
           role="alert"
           aria-live="polite"
-          className="text-sm font-semibold text-red-600 empty:hidden"
+          className="text-sm font-semibold text-danger empty:hidden"
         >
           {showErrors && nameTooShort ? t("nameError") : ""}
         </p>
@@ -106,7 +106,7 @@ export function DetailsStep({ showErrors }: DetailsStepProps) {
             className={cn(
               "rounded-input border-border bg-surface text-ink border",
               "min-h-11 shrink-0 px-3 text-[16px] font-semibold",
-              "focus-visible:border-accent focus-visible:outline-accent",
+              "focus-visible:border-accent focus-visible:outline-focus",
               "focus-visible:outline-2 focus-visible:outline-offset-0",
             )}
           >
@@ -143,7 +143,7 @@ export function DetailsStep({ showErrors }: DetailsStepProps) {
         <p
           role="alert"
           aria-live="polite"
-          className="text-sm font-semibold text-red-600 empty:hidden"
+          className="text-sm font-semibold text-danger empty:hidden"
         >
           {phoneInvalid
             ? t("phoneError")
@@ -174,7 +174,7 @@ export function DetailsStep({ showErrors }: DetailsStepProps) {
             id={`${emailId}-error`}
             role="alert"
             aria-live="polite"
-            className="text-sm font-semibold text-red-600 empty:hidden"
+            className="text-sm font-semibold text-danger empty:hidden"
           >
             {emailInvalid ? t("emailError") : ""}
           </p>

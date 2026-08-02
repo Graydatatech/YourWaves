@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { Bidi } from "@/components/ui";
+import specsImage from "../../../public/media/gallery-2.jpg";
 import { SectionIntro } from "./SectionIntro";
 
 const SPECS = [
@@ -39,11 +40,12 @@ export function SafetySpecs() {
             ].join(" ")}
           >
             <Image
-              src="/media/gallery-2.jpg"
+              src={specsImage}
               alt={t("imageAlt")}
               fill
               loading="lazy"
               sizes="(min-width: 1024px) 45vw, 92vw"
+              placeholder="blur"
               className="object-cover opacity-90 mix-blend-luminosity"
             />
             {/* Diagonal stripe overlay from the dark-panel token, kept visible

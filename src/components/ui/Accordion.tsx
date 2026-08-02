@@ -54,7 +54,7 @@ export function Accordion({
         className={cn(
           "flex cursor-pointer list-none items-center justify-between gap-4",
           "text-ink text-start font-semibold",
-          "rounded-card focus-visible:outline-accent focus-visible:outline-2",
+          "rounded-card focus-visible:outline-focus focus-visible:outline-2",
           "[&::-webkit-details-marker]:hidden",
           isPlus
             ? "min-h-16 px-5 py-4 text-[17px] sm:px-6"

@@ -1,6 +1,13 @@
 import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { Bidi } from "@/components/ui";
+// Imported as a MODULE, not referenced by path. That is what gets us the
+// intrinsic dimensions, the content-hashed immutable URL, and — the reason it
+// matters here — a build-time blurDataURL. `placeholder="blur"` with a string
+// src is silently ignored unless you hand-write the base64 yourself.
+// `public/` is outside the @/* alias root, so this one is relative by
+// necessity rather than by preference.
+import heroPoster from "../../../public/media/hero-poster.jpg";
 import { HeroMedia } from "./HeroMedia";
 
 const STATS = [
@@ -33,12 +40,15 @@ export function Hero() {
   return (
     <section
       id="top"
-      className="relative isolate flex min-h-[min(92vh,860px)] flex-col justify-end overflow-hidden"
+      // `on-dark` switches the focus ring to --accent-light for everything
+      // inside: the CTAs sit on a near-black scrim where the default
+      // --accent-strong ring measures 3.42:1 and reads as a smudge.
+      className="on-dark relative isolate flex min-h-[min(92vh,860px)] flex-col justify-end overflow-hidden"
     >
       {/* Media layer ---------------------------------------------------- */}
       <div className="absolute inset-0 -z-10">
         <Image
-          src="/media/hero-poster.jpg"
+          src={heroPoster}
           alt={t("posterAlt")}
           fill
           // The single LCP candidate on the page: fetched at highest priority,
@@ -46,6 +56,11 @@ export function Hero() {
           priority
           fetchPriority="high"
           sizes="100vw"
+          // The blur is ~1KB of base64 inlined into the HTML, so it paints in
+          // the same frame as the document and the hero is never a bare dark
+          // rectangle on a slow connection. Chrome's low-entropy heuristic
+          // excludes it from LCP candidacy, so this cannot flatter the metric.
+          placeholder="blur"
           className="object-cover"
         />
         {HERO_VIDEO_SRC && <HeroMedia src={HERO_VIDEO_SRC} />}

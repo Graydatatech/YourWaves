@@ -323,10 +323,10 @@ export function OtpField({
                   "size-14 shrink-0 rounded-2xl border text-center",
                   // 20px: comfortably above the 16px iOS zoom threshold.
                   "text-[20px] font-bold tabular-nums",
-                  "focus-visible:border-accent focus-visible:outline-accent",
+                  "focus-visible:border-accent focus-visible:outline-focus",
                   "focus-visible:outline-2 focus-visible:outline-offset-0",
                   phase === "error"
-                    ? "border-red-500 bg-red-50 text-red-900"
+                    ? "border-danger bg-danger-surface text-ink"
                     : "border-border bg-surface text-ink",
                   phase === "verifying" && "opacity-60",
                 )}
@@ -344,7 +344,7 @@ export function OtpField({
               <span className="text-muted">{t("verifying")}</span>
             )}
             {phase === "error" && error && (
-              <span className="text-red-600">
+              <span className="text-danger">
                 {t(error)}
                 {attemptsLeft !== null && attemptsLeft > 0 && (
                   <>

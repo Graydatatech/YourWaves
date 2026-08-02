@@ -325,7 +325,7 @@ export function JobActions({
               "transition-colors disabled:opacity-60",
               isDone
                 ? "bg-[#ecfdf5] text-[#065f46]"
-                : "bg-[#0a7a8c] text-white",
+                : "bg-[#097182] text-white",
             )}
           >
             {pending && confirming === action
@@ -350,7 +350,7 @@ export function JobActions({
         >
           <div className="w-full rounded-3xl bg-white p-5 pb-[calc(20px+env(safe-area-inset-bottom))]">
             <h2 className="text-xl font-extrabold">{CONFIRM[confirming]}</h2>
-            <p className="pt-2 text-base text-[#4a6577]">{t("confirmBody")}</p>
+            <p className="pt-2 text-base text-[#425a6b]">{t("confirmBody")}</p>
 
             {/* The optional photo of the finished setup. Only on the last step:
                 a picture of a wave that is not built yet proves nothing, and an
@@ -421,7 +421,7 @@ export function JobActions({
                 type="button"
                 disabled={preparing}
                 onClick={() => void run(confirming)}
-                className="min-h-14 rounded-2xl bg-[#0a7a8c] px-5 text-lg font-extrabold text-white disabled:opacity-60"
+                className="min-h-14 rounded-2xl bg-[#097182] px-5 text-lg font-extrabold text-white disabled:opacity-60"
               >
                 {t("confirmYes")}
               </button>

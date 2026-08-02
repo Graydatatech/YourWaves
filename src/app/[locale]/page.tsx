@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { setRequestLocale, getTranslations } from "next-intl/server";
 import { isLocale } from "@/i18n/routing";
+import { alternatesFor, localeUrl, ogLocales } from "@/lib/seo";
+import { buildJsonLd, FAQ_ITEMS } from "@/lib/jsonLd";
 import {
   BookingSection,
   Faq,
@@ -24,15 +26,52 @@ export async function generateMetadata({
   const t = await getTranslations({ locale, namespace: "hero" });
   const tCommon = await getTranslations({ locale, namespace: "common" });
 
+  const title = `${tCommon("brand")} — ${t("title")}`;
+  const description = t("subtitle");
+
   return {
-    title: `${tCommon("brand")} — ${t("title")}`,
-    description: t("subtitle"),
+    title,
+    description,
+    /**
+     * The hreflang cluster and the canonical, from the one helper that also
+     * feeds the sitemap. See lib/seo.ts for why x-default is the ARABIC page.
+     */
+    alternates: alternatesFor(locale, ""),
     openGraph: {
-      title: tCommon("brand"),
-      description: t("subtitle"),
-      images: ["/media/hero-poster.jpg"],
-      locale,
+      title,
+      description,
+      url: localeUrl(locale, ""),
+      siteName: tCommon("brand"),
       type: "website",
+      ...ogLocales(locale),
+      /**
+       * No `images` here on purpose. The co-located `opengraph-image.tsx`
+       * supplies it, and Next merges that in automatically with the right
+       * absolute URL, dimensions and alt text. Setting it here as well would
+       * emit two og:image tags, and a scraper takes the first — which would be
+       * this one, silently overriding the generated card.
+       */
+    },
+    twitter: {
+      // `summary_large_image` is the only card worth using for a visual
+      // product; `summary` crops the 1200x630 to a small square and loses the
+      // wordmark entirely.
+      card: "summary_large_image",
+      title,
+      description,
+    },
+    robots: {
+      index: true,
+      follow: true,
+      googleBot: {
+        index: true,
+        follow: true,
+        // Let Google show a full-size image and a long snippet — this page is
+        // the whole public site and there is nothing to hold back.
+        "max-image-preview": "large",
+        "max-snippet": -1,
+        "max-video-preview": -1,
+      },
     },
   };
 }
@@ -47,9 +86,44 @@ export default async function HomePage({
   setRequestLocale(locale);
 
   const t = await getTranslations("common");
+  const tHero = await getTranslations("hero");
+  const tFooter = await getTranslations("footer");
+  const tFaq = await getTranslations("faq");
+
+  /**
+   * Structured data, built from the same catalogue the page renders below.
+   *
+   * Injected with `dangerouslySetInnerHTML` because that is the only way to
+   * emit a raw <script> body in React — the content is our own translated copy
+   * and a JSON.stringify of an object we constructed, not user input. The `<`
+   * escape guards the one case that is still a real injection vector: a
+   * translated string containing `</script>` would otherwise close the tag
+   * early and let the rest of the string be parsed as HTML.
+   */
+  const jsonLd = buildJsonLd({
+    locale,
+    brand: t("brand"),
+    tagline: t("tagline"),
+    heroTitle: tHero("title"),
+    heroSubtitle: tHero("subtitle"),
+    email: tFooter("email"),
+    phone: tFooter("phone"),
+    faq: FAQ_ITEMS.map((item) => ({
+      question: tFaq(`items.${item}.question`),
+      answer: tFaq(`items.${item}.answer`),
+    })),
+    imageUrl: `${localeUrl(locale, "")}/opengraph-image`,
+  });
 
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c"),
+        }}
+      />
+
       {/* First focusable element on the page: lets keyboard and screen-reader
           users jump past the sticky header. */}
       <a

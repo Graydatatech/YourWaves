@@ -126,7 +126,7 @@ export function HoldPanel({
             <p
               role="alert"
               aria-live="polite"
-              className="mt-2 text-sm font-semibold text-red-600 empty:hidden"
+              className="mt-2 text-sm font-semibold text-danger empty:hidden"
             >
               {payError ?? ""}
             </p>
@@ -193,11 +193,11 @@ export function HoldPanel({
     const dateIsGone = error === "DATE_TAKEN";
     return (
       <div
-        className="rounded-card border border-red-500/40 bg-red-50 p-5"
+        className="rounded-card border border-danger/40 bg-danger-surface p-5"
         role="alert"
       >
         <h3 className="text-ink text-base font-bold">{t("refusedTitle")}</h3>
-        <p className="mt-2 text-sm font-semibold text-red-700">{tErr(error)}</p>
+        <p className="mt-2 text-sm font-semibold text-danger">{tErr(error)}</p>
 
         <div className="mt-4 flex flex-wrap gap-3">
           <button

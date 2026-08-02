@@ -520,7 +520,10 @@ function DriversPanel({ drivers }: { drivers: DriverRow[] }) {
                 className={cn(
                   "rounded-pill mt-1 min-h-11 border px-2.5 text-xs font-bold",
                   driver.isDefault
-                    ? "border-[#b8e3ef] bg-[#e8f6fb] text-[#0a7a8c]"
+                    // Same pair as the `confirmed` status pill; kept in step
+                    // with it, and on the post-phase-10 accent (5.14:1, was
+                    // 4.55:1 on the old #0a7a8c).
+                    ? "border-[#b8e3ef] bg-[#e8f6fb] text-[#097182]"
                     : "border-border text-muted-2",
                 )}
               >
