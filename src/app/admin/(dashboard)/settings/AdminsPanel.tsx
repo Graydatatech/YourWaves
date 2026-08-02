@@ -14,6 +14,38 @@ const FIELD = cn(
 );
 
 /**
+ * Every refusal the two routes can return, plus a catch-all.
+ *
+ * next-intl's keys are TYPED against the real catalogue (see global.d.ts), so
+ * `t(\`admins.errors.${body.error}\`)` does not compile — `body.error` comes
+ * off a parsed JSON response as `any`, and an `any` cannot be proven to name a
+ * message that exists.
+ *
+ * Narrowing it here is not a workaround for the type system, it is the thing
+ * the type system was asking for: the value arrives over the wire, so treating
+ * it as a known code rather than a trusted one is correct regardless. An
+ * unrecognised code falls back to a generic message instead of rendering a raw
+ * key at somebody mid-task.
+ */
+const ERROR_CODES = [
+  "already_admin",
+  "invalid_email",
+  "cannot_revoke_self",
+  "last_admin",
+  "not_found",
+  "failed",
+] as const;
+
+type AdminErrorCode = (typeof ERROR_CODES)[number];
+
+function toErrorCode(value: unknown): AdminErrorCode {
+  return typeof value === "string" &&
+    (ERROR_CODES as readonly string[]).includes(value)
+    ? (value as AdminErrorCode)
+    : "failed";
+}
+
+/**
  * Back-office accounts.
  *
  * Replaces `node scripts/create-admin.mjs`, which is fine for bootstrapping the
@@ -57,7 +89,7 @@ export function AdminsPanel({ admins }: { admins: AdminUserRow[] }) {
       });
       const body = await response.json().catch(() => ({}));
       if (!response.ok || !body?.ok) {
-        setError(t(`admins.errors.${body?.error ?? "failed"}`));
+        setError(t(`admins.errors.${toErrorCode(body?.error)}`));
         return;
       }
       setCreated((previous) => [
@@ -82,7 +114,7 @@ export function AdminsPanel({ admins }: { admins: AdminUserRow[] }) {
       });
       const body = await response.json().catch(() => ({}));
       if (!response.ok || !body?.ok) {
-        setError(t(`admins.errors.${body?.error ?? "failed"}`));
+        setError(t(`admins.errors.${toErrorCode(body?.error)}`));
         return;
       }
       router.refresh();

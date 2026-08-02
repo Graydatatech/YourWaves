@@ -1,5 +1,6 @@
 import "server-only";
 
+import { randomBytes } from "node:crypto";
 import { sql } from "@/db/client";
 import { asUser, type AdminSession } from "./session";
 import {
@@ -528,8 +529,12 @@ export async function deleteDriver(
 function generatePassword(): string {
   const alphabet =
     "abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789-_";
-  const bytes = crypto.getRandomValues(new Uint8Array(24));
-  return Array.from(bytes, (byte) => alphabet[byte % alphabet.length]).join("");
+  // node:crypto, not the DOM `crypto` global — this module is server-only and
+  // this is the same source scripts/create-admin.mjs draws from.
+  return Array.from(
+    randomBytes(24),
+    (byte) => alphabet[byte % alphabet.length],
+  ).join("");
 }
 
 export type CreateAdminResult =
