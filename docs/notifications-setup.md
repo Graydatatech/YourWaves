@@ -171,3 +171,61 @@ no flexbox or grid, no `<style>` block, no remote images, 600px, a solid
 fallback under the gradient) and a test asserts each of those, but asserting the
 constraints is not the same as looking at the result. Send one of each to a real
 inbox once the domain is verified.
+
+---
+
+## Scheduling the worker — the step that makes any of this run
+
+**Nothing is sent until something calls the worker.** The outbox is drained by
+`POST /api/cron/send-notifications`; a booking that confirms with no scheduler
+running leaves its notifications sitting in the table as `queued`, forever, with
+no error anywhere. That is exactly what happened on the first deployment: Resend
+was configured, the template rendered, the row was enqueued — and nobody was
+calling the worker.
+
+`vercel.json` now schedules all three jobs:
+
+| Path | Schedule | Why |
+| --- | --- | --- |
+| `/api/cron/send-notifications` | every minute | the outbox; a confirmation that arrives ten minutes late reads as broken |
+| `/api/cron/sweep-holds` | every minute | reconciles lapsed holds (`active_bookings` already ignores them, so this is tidying rather than correctness) |
+| `/api/cron/reconcile-payments` | every 10 minutes | turns a lost webhook into a delay rather than a lost booking |
+
+Two things to know about Vercel Cron:
+
+- **It sends GET, not POST**, and adds `Authorization: Bearer $CRON_SECRET`
+  automatically when that variable is set on the project. Each route exports
+  `GET = POST` for this. `CRON_SECRET` must be set or every endpoint answers
+  **503** and does nothing — deliberately, since an open worker endpoint lets
+  anyone drain the queue and each drained row costs a WhatsApp template fee.
+- **Frequency depends on the plan.** Hobby allows a small number of jobs firing
+  once a day, which is useless for an outbox. Minute-level scheduling needs Pro.
+
+### If minute-level Vercel Cron is not available
+
+Any scheduler that can POST with a header works. `cron-job.org`, a GitHub
+Actions workflow, or Supabase's own pg_cron with pg_net:
+
+```sql
+select cron.schedule(
+  'yw-send-notifications', '* * * * *',
+  $$ select net.http_post(
+       url     := 'https://yourwaves.qa/api/cron/send-notifications',
+       headers := '{"Authorization":"Bearer YOUR_CRON_SECRET"}'::jsonb
+     ) $$
+);
+```
+
+pg_cron is already scheduled on this project for `expire_stale_holds` (§4e), so
+the extension is available; `pg_net` may need enabling.
+
+### Checking it is working
+
+```sql
+SELECT status, count(*) FROM notifications GROUP BY status;
+```
+
+Rows stuck in `queued` with `attempts = 0` mean the worker is not running at
+all. Rows in `queued` with a rising `attempts` and a `last_error` mean it IS
+running and the provider is rejecting them — a different problem, and one the
+admin notifications log will name.

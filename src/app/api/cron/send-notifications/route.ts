@@ -54,3 +54,22 @@ export async function POST(request: Request) {
     );
   }
 }
+
+/**
+ * Vercel Cron invokes a route with **GET**, not POST — and signs the request
+ * with `Authorization: Bearer $CRON_SECRET` automatically whenever that
+ * variable is set on the project. The POST handler above already accepts that
+ * header, so the same function serves both.
+ *
+ * A GET that has an effect is not something to do casually, and this one is
+ * only safe because of what guards it: without CRON_SECRET the endpoint
+ * answers 503 and does nothing, and with it a caller must already know the
+ * secret. It is not linked from anywhere, not in the sitemap, and disallowed
+ * in robots.txt, so nothing crawls it into running.
+ *
+ * POST is kept as the primary verb for every other scheduler — Supabase
+ * pg_cron + pg_net, GitHub Actions, cron-job.org — which is what you need if
+ * the project is on a Vercel plan whose crons only fire once a day. This one
+ * drains the notification outbox.
+ */
+export const GET = POST;
