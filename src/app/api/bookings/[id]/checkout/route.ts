@@ -49,8 +49,27 @@ export async function POST(
   const jar = await cookies();
   const token = jar.get(OTP_COOKIE_NAME)?.value;
   if (!token) {
+    /**
+     * `code` as well as `error`, and this is not cosmetic.
+     *
+     * useCheckout reads `body.code` and falls back to PROVIDER_ERROR when it is
+     * absent — so this 403 used to reach the customer as "our payment provider
+     * is not responding". That is worse than unhelpful: it is a lie that points
+     * at the one component which was never contacted, and the only recovery it
+     * suggests is retrying the payment, which cannot work. The actual fix is to
+     * verify the phone again.
+     *
+     * It cost real debugging time on the deployed site — a 403 with `22ms` and
+     * "no outgoing requests" in the Vercel log, while the screen blamed
+     * SkipCash.
+     *
+     * The verification cookie lasts 30 minutes and the hold survives in
+     * sessionStorage, so this is a NORMAL state to end up in: leave the tab
+     * open through a long checkout and the token lapses under a live Pay
+     * button.
+     */
     return Response.json(
-      { error: "phone_not_verified" },
+      { error: "phone_not_verified", code: "PHONE_NOT_VERIFIED" },
       { status: 403, headers: NO_STORE },
     );
   }
@@ -61,9 +80,11 @@ export async function POST(
   const phone = owner[0]?.customer_phone;
   if (!phone || !verifyOtpToken(token, phone).valid) {
     // Same answer for "no such booking" and "not yours", so an id cannot be
-    // used to probe which bookings exist.
+    // used to probe which bookings exist. NOT_FOUND rather than
+    // PHONE_NOT_VERIFIED for the same reason: a token that fails to verify
+    // must not be distinguishable from a booking that is not there.
     return Response.json(
-      { error: "not_found" },
+      { error: "not_found", code: "NOT_FOUND" },
       { status: 404, headers: NO_STORE },
     );
   }

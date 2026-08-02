@@ -8,6 +8,9 @@ type CheckoutError =
   | "NOT_HOLDING"
   | "HOLD_EXPIRED"
   | "ALREADY_PAID"
+  // The 30-minute phone-verification cookie lapsed while the hold was still
+  // live. Recoverable, and NOT a payment fault — it used to be reported as one.
+  | "PHONE_NOT_VERIFIED"
   | "PROVIDER_ERROR"
   | "NETWORK";
 
@@ -47,10 +50,24 @@ export function useCheckout(bookingId: string | null, locale: "ar" | "en") {
         return;
       }
 
-      const code: CheckoutError =
-        typeof body?.code === "string"
-          ? (body.code as CheckoutError)
-          : "PROVIDER_ERROR";
+      /**
+       * PROVIDER_ERROR is the fallback for a response that names no code, and
+       * it is a bad one — it blames the payment provider for anything the
+       * server failed to label, including failures that never reached a
+       * provider at all. Every refusal from the route now carries a `code`, so
+       * this branch should be unreachable; it is kept narrow and logged rather
+       * than silently mislabelling the next unlabelled failure.
+       */
+      let code: CheckoutError;
+      if (typeof body?.code === "string") {
+        code = body.code as CheckoutError;
+      } else {
+        console.error("[checkout] refusal with no code", {
+          status: response.status,
+          error: typeof body?.error === "string" ? body.error : undefined,
+        });
+        code = "PROVIDER_ERROR";
+      }
       setError(t(code));
       setPaying(false);
     } catch {
