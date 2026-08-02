@@ -820,7 +820,18 @@
       "footerSocialHint": "Social links. Empty hides that link entirely — a button going nowhere is worse than no button. A bare domain gets https:// added.",
       "footerInstagram": "Instagram",
       "footerWhatsapp": "WhatsApp",
-      "footerYoutube": "YouTube"
+      "footerYoutube": "YouTube",
+      "faq": "Frequently asked questions",
+      "faqHint": "Shown on the home page and published as structured data for search engines. Deleting every row restores the designed questions.",
+      "faqRow": "Question {number}",
+      "faqAdd": "Add a question",
+      "faqRemove": "Remove",
+      "faqMoveUp": "Move up",
+      "faqMoveDown": "Move down",
+      "faqQuestionEn": "Question (English)",
+      "faqQuestionAr": "Question (Arabic)",
+      "faqAnswerEn": "Answer (English)",
+      "faqAnswerAr": "Answer (Arabic)"
     },
     "admins": {
       "title": "Back-office access",

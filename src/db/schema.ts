@@ -405,6 +405,23 @@ export const settings = pgTable("settings", {
     .notNull()
     .default({}),
 
+  /**
+   * FAQ (migration 0016), in display order. Empty falls back to the questions
+   * in messages/*.json, so deleting every row restores the designed set rather
+   * than emptying the section.
+   */
+  faq: jsonb("faq")
+    .$type<
+      {
+        questionEn: string;
+        questionAr: string;
+        answerEn: string;
+        answerAr: string;
+      }[]
+    >()
+    .notNull()
+    .default([]),
+
   updatedAt: timestamp("updated_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

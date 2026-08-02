@@ -4,6 +4,7 @@ import { setRequestLocale, getTranslations } from "next-intl/server";
 import { isLocale } from "@/i18n/routing";
 import { alternatesFor, localeUrl, ogLocales } from "@/lib/seo";
 import { buildJsonLd, FAQ_ITEMS } from "@/lib/jsonLd";
+import { getFaq } from "@/lib/site/faq";
 import {
   BookingSection,
   Faq,
@@ -123,10 +124,19 @@ export default async function HomePage({
     heroSubtitle: tHero("subtitle"),
     email: tFooter("email"),
     phone: tFooter("phone"),
-    faq: FAQ_ITEMS.map((item) => ({
-      question: tFaq(`items.${item}.question`),
-      answer: tFaq(`items.${item}.answer`),
-    })),
+    /**
+     * The SAME source the accordion renders from. Building the structured data
+     * out of the catalogue while the page showed admin-edited questions would
+     * publish a FAQPage describing content that is not on the page — which is a
+     * manual-action risk, not a cosmetic mismatch.
+     */
+    faq: await getFaq(
+      locale,
+      FAQ_ITEMS.map((item) => ({
+        question: tFaq(`items.${item}.question`),
+        answer: tFaq(`items.${item}.answer`),
+      })),
+    ),
     imageUrl: `${localeUrl(locale, "")}/opengraph-image`,
   });
 

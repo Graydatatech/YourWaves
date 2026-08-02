@@ -64,6 +64,23 @@ const patchSchema = z.object({
       youtube: z.string().max(300).optional(),
     })
     .optional(),
+
+  /**
+   * FAQ, in display order. Blank rows are dropped rather than rejected — an
+   * admin who adds a row and changes their mind should be able to save, not be
+   * blocked by an empty box they have to find and remove.
+   */
+  faq: z
+    .array(
+      z.object({
+        questionEn: z.string().max(300),
+        questionAr: z.string().max(300),
+        answerEn: z.string().max(4_000),
+        answerAr: z.string().max(4_000),
+      }),
+    )
+    .max(40)
+    .optional(),
 });
 
 export async function GET() {
@@ -93,6 +110,26 @@ export async function PATCH(request: Request) {
   }
 
   const patch = { ...parsed.data };
+
+  /**
+   * Drop FAQ rows with no English question or no English answer.
+   *
+   * The form lets an admin add a row and then think better of it, and blocking
+   * the save on an empty box they have to hunt for is a worse experience than
+   * quietly not storing it. English is the required pair because Arabic falls
+   * back to it at render — a row with only Arabic would vanish on the English
+   * page, which is a confusing way to lose your work.
+   */
+  if (patch.faq) {
+    patch.faq = patch.faq
+      .map((item) => ({
+        questionEn: item.questionEn.trim(),
+        questionAr: item.questionAr.trim(),
+        answerEn: item.answerEn.trim(),
+        answerAr: item.answerAr.trim(),
+      }))
+      .filter((item) => item.questionEn !== "" && item.answerEn !== "");
+  }
 
   // Times are stored canonically so availability comparisons stay string
   // comparisons — the same normalisation the booking flow uses.

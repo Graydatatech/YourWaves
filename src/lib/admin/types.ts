@@ -21,6 +21,21 @@ import type { ServiceArea } from "@/lib/booking/serviceArea";
  * Email, phone and the social URLs are locale-independent; the tagline and the
  * delivery-area line are not, so they exist per language.
  */
+/**
+ * One FAQ entry, in both languages.
+ *
+ * All four fields are required rather than optional: a half-translated question
+ * is worse than an untranslated one, because the reader gets a question with no
+ * answer. The form refuses to save a row with an empty English question, and
+ * Arabic falls back to English at render.
+ */
+export type FaqItem = {
+  questionEn: string;
+  questionAr: string;
+  answerEn: string;
+  answerAr: string;
+};
+
 export type FooterContent = {
   taglineEn?: string;
   taglineAr?: string;
@@ -197,5 +212,6 @@ export type AdminSettings = {
   termsEn: string;
   termsAr: string;
   footer: FooterContent;
+  faq: FaqItem[];
   updatedAt: string;
 };

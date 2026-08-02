@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { formatMoney } from "@/lib/booking/format";
-import type { AdminSettings, DriverRow } from "@/lib/admin/types";
+import type { AdminSettings, DriverRow, FaqItem } from "@/lib/admin/types";
 import type { ServiceArea } from "@/lib/booking/serviceArea";
 import { cn } from "@/lib/cn";
 import { ConfirmSheet } from "../../components/ConfirmSheet";
@@ -74,6 +74,13 @@ export function SettingsForm({
    */
   const [areas, setAreas] = useState<ServiceArea[]>(settings.serviceAreas);
 
+  /**
+   * FAQ rows. Separate state from `form` for the same reason `areas` is: this
+   * is a list of records, and a textarea of lines cannot express four fields
+   * per row without inventing a separator that becomes part of the data.
+   */
+  const [faq, setFaq] = useState<FaqItem[]>(settings.faq);
+
   const [pending, setPending] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -118,6 +125,7 @@ export function SettingsForm({
         // silently reflow somebody's terms into one block.
         termsEn: form.termsEn,
         termsAr: form.termsAr,
+        faq,
         footer: {
           taglineEn: form.footerTaglineEn,
           taglineAr: form.footerTaglineAr,
@@ -337,6 +345,118 @@ export function SettingsForm({
             {...field("adminNotificationEmails")}
           />
         </Labelled>
+      </section>
+
+      {/* FAQ ---------------------------------------------------------------
+          Deleting every row restores the designed questions, like the footer
+          and the terms — an empty section reads as broken, not as intentional. */}
+      <section className="border-border bg-surface rounded-card border p-4">
+        <h2 className="text-ink-deep text-sm font-bold">{t("settings.faq")}</h2>
+        <p className="text-muted-2 pt-1 text-sm">{t("settings.faqHint")}</p>
+
+        <ul className="flex flex-col gap-3 pt-3">
+          {faq.map((item, index) => (
+            <li key={index} className="border-border rounded-input border p-3">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-muted-2 text-xs font-bold">
+                  {t("settings.faqRow", { number: index + 1 })}
+                </span>
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    aria-label={t("settings.faqMoveUp")}
+                    disabled={index === 0}
+                    onClick={() =>
+                      setFaq((previous) => {
+                        const next = [...previous];
+                        [next[index - 1], next[index]] = [
+                          next[index],
+                          next[index - 1],
+                        ];
+                        return next;
+                      })
+                    }
+                    className="tap-target text-muted-2 hover:text-ink disabled:opacity-30"
+                  >
+                    ↑
+                  </button>
+                  <button
+                    type="button"
+                    aria-label={t("settings.faqMoveDown")}
+                    disabled={index === faq.length - 1}
+                    onClick={() =>
+                      setFaq((previous) => {
+                        const next = [...previous];
+                        [next[index], next[index + 1]] = [
+                          next[index + 1],
+                          next[index],
+                        ];
+                        return next;
+                      })
+                    }
+                    className="tap-target text-muted-2 hover:text-ink disabled:opacity-30"
+                  >
+                    ↓
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setFaq((previous) =>
+                        previous.filter((_, i) => i !== index),
+                      )
+                    }
+                    className="tap-target text-danger text-sm font-bold"
+                  >
+                    {t("settings.faqRemove")}
+                  </button>
+                </div>
+              </div>
+
+              {(
+                [
+                  ["questionEn", "faqQuestionEn", "ltr", 1],
+                  ["questionAr", "faqQuestionAr", "rtl", 1],
+                  ["answerEn", "faqAnswerEn", "ltr", 3],
+                  ["answerAr", "faqAnswerAr", "rtl", 3],
+                ] as const
+              ).map(([key, label, dir, rows]) => (
+                <label key={key} className="mt-2 block">
+                  <span className="text-muted-2 text-xs font-semibold">
+                    {t(`settings.${label}`)}
+                  </span>
+                  <textarea
+                    rows={rows}
+                    dir={dir}
+                    className={cn(FIELD, "mt-1 py-2 text-sm")}
+                    value={item[key]}
+                    onChange={(event) =>
+                      setFaq((previous) =>
+                        previous.map((row, i) =>
+                          i === index
+                            ? { ...row, [key]: event.target.value }
+                            : row,
+                        ),
+                      )
+                    }
+                  />
+                </label>
+              ))}
+            </li>
+          ))}
+        </ul>
+
+        <button
+          type="button"
+          onClick={() =>
+            setFaq((previous) => [
+              ...previous,
+              { questionEn: "", questionAr: "", answerEn: "", answerAr: "" },
+            ])
+          }
+          className="border-border text-ink rounded-pill mt-3 min-h-11 border px-5 text-sm font-bold"
+        >
+          {t("settings.faqAdd")}
+        </button>
       </section>
 
       {/* Footer ------------------------------------------------------------

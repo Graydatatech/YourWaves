@@ -7,6 +7,7 @@ import {
   ADMIN_TRANSITIONS,
   ALLOWED_TRANSITIONS,
   type BookingStatus,
+  type FaqItem,
   type FooterContent,
 } from "./types";
 
@@ -318,6 +319,7 @@ export type SettingsPatch = {
   termsEn?: string;
   termsAr?: string;
   footer?: FooterContent;
+  faq?: FaqItem[];
 };
 
 /**
@@ -334,6 +336,7 @@ export type SettingsPatch = {
 const JSONB_SETTINGS_COLUMNS = new Set<keyof SettingsPatch>([
   "serviceAreas",
   "footer",
+  "faq",
 ]);
 
 const SETTINGS_COLUMNS: Record<keyof SettingsPatch, string> = {
@@ -349,6 +352,7 @@ const SETTINGS_COLUMNS: Record<keyof SettingsPatch, string> = {
   termsEn: "terms_en",
   termsAr: "terms_ar",
   footer: "footer",
+  faq: "faq",
 };
 
 /**
