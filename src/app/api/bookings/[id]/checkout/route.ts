@@ -28,6 +28,10 @@ const STATUS_FOR: Record<CheckoutRefusal, number> = {
   NOT_HOLDING: 409,
   HOLD_EXPIRED: 409,
   ALREADY_PAID: 409,
+  // 503, not 502: nothing is wrong upstream, WE are not set up. The distinction
+  // matters to anything reading these logs — 502 invites you to go and look at
+  // the gateway, which is exactly the wrong place.
+  NOT_CONFIGURED: 503,
   PROVIDER_ERROR: 502,
 };
 

@@ -14,6 +14,19 @@ export type CheckoutRefusal =
   | "NOT_HOLDING"
   | "HOLD_EXPIRED"
   | "ALREADY_PAID"
+  /**
+   * The gateway is not set up: a missing credential, or the mock selected in a
+   * production build. Distinct from PROVIDER_ERROR on purpose — this one is
+   * OUR misconfiguration and no amount of retrying will fix it, whereas
+   * PROVIDER_ERROR means the gateway was contacted and something went wrong
+   * there, which a retry might well survive.
+   *
+   * Without this they were indistinguishable: `createPaymentProvider()` threw,
+   * escaped the route, and Next answered a bare 500 with no `code`, which the
+   * client relabelled PROVIDER_ERROR — so a missing environment variable
+   * presented to the customer as "our payment provider is not responding".
+   */
+  | "NOT_CONFIGURED"
   | "PROVIDER_ERROR";
 
 export type CheckoutStart =
@@ -66,7 +79,25 @@ export async function startCheckout(params: {
   if (booking.status !== "holding") return { ok: false, code: "NOT_HOLDING" };
   if (booking.hold_expired) return { ok: false, code: "HOLD_EXPIRED" };
 
-  const provider = createPaymentProvider();
+  /**
+   * The factory throws on a missing credential, and it used to throw straight
+   * through this function and out of the route. The customer got a 500 and a
+   * message blaming the gateway; the operator got a stack trace. Catching it
+   * here turns "someone forgot an environment variable" into a named refusal
+   * that says so, in the log and on the screen.
+   */
+  let provider;
+  try {
+    provider = createPaymentProvider();
+  } catch (error) {
+    console.error("[payments] gateway not configured", {
+      bookingId,
+      // The factory's message names the exact variables that are missing. It
+      // contains no secret values — only their names.
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return { ok: false, code: "NOT_CONFIGURED" };
+  }
 
   // Reuse an existing initiated attempt rather than stacking rows: a customer
   // who taps "pay" twice should land on the same hosted page, not create a

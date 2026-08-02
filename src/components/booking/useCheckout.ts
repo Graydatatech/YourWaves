@@ -11,6 +11,9 @@ type CheckoutError =
   // The 30-minute phone-verification cookie lapsed while the hold was still
   // live. Recoverable, and NOT a payment fault — it used to be reported as one.
   | "PHONE_NOT_VERIFIED"
+  // The gateway is not set up on our side. Retrying cannot help, so the copy
+  // must not invite it.
+  | "NOT_CONFIGURED"
   | "PROVIDER_ERROR"
   | "NETWORK";
 

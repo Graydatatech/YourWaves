@@ -364,6 +364,7 @@
         "HOLD_EXPIRED": "Your hold expired before payment started. Hold the date again.",
         "ALREADY_PAID": "This booking is already paid and confirmed.",
         "PHONE_NOT_VERIFIED": "Your phone verification expired. Verify your number again to continue to payment — your booking details are unchanged.",
+        "NOT_CONFIGURED": "Online payment is not available right now. Please contact us to complete your booking — your date is still held.",
         "PROVIDER_ERROR": "Our payment provider is not responding. Please try again in a moment.",
         "NETWORK": "No connection. Check your signal and try again."
       }
