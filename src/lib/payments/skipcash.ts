@@ -194,37 +194,80 @@ export class SkipCashProvider implements PaymentProvider {
     const lastName = parts.slice(1).join(" ") || firstName;
 
     /**
+     * SkipCash REQUIRES an email — an empty one is rejected with
+     * `'Email' must not be empty.` — but `BOOKING_FORM.email` is off, so the
+     * form does not collect one. Without a fallback every real booking would
+     * fail at checkout.
+     *
+     * The fallback is the business's own inbox rather than a synthesised
+     * address at our domain: SkipCash mails its receipt here, and inventing
+     * `noreply+YW-2026-0001@…` would send those receipts into a mailbox nobody
+     * reads or, worse, bounce them. The customer is not deprived of anything —
+     * their confirmation comes from our own notification system over WhatsApp
+     * and email (§4g), which is the channel this business actually uses.
+     *
+     * The real fix, if the receipts matter to customers, is to turn
+     * `BOOKING_FORM.email` back on and collect it. That is a product decision,
+     * so it stays a decision rather than being forced by this constraint.
+     */
+    const email =
+      input.customer.email?.trim() ||
+      process.env.BOOKINGS_NOTIFICATION_EMAIL?.trim() ||
+      process.env.EMAIL_REPLY_TO?.trim() ||
+      "";
+
+    /**
      * The signed field list, in SkipCash's documented order and casing.
-     * Anything added here changes the hash, so it must match the API's own
-     * canonical list exactly — this is not a place to add a field "since we
-     * are sending it anyway". Unsigned extras go on the body below.
+     *
+     * EMPTY VALUES ARE DROPPED, from the signature AND the body, and that is
+     * the whole ball game. SkipCash rebuilds its comparison hash from the
+     * fields it can see with values; send `Street=""` and our canonical string
+     * says `Street=,City=,State=,PostalCode=` where theirs says nothing at all,
+     * and the request is rejected with a bare `Signature does not match!` that
+     * names nothing.
+     *
+     * Verified against the sandbox: the identical request with empties included
+     * returns 403, and with them dropped returns 200. Their own two guides
+     * disagree on this — the Node sample sends empties, the PHP one omits the
+     * address block entirely — and the PHP one is the accurate description.
+     *
+     * The webhook side already worked this way; it is documented there as
+     * "include them if you're using them". Same rule, both directions.
      *
      * `Uid` is a UUID in SkipCash's sample. `bookings.id` is a Postgres uuid,
-     * so passing it straight through is both correct and useful: it makes the
-     * gateway's own record searchable by our primary key.
-     *
-     * Address fields are sent EMPTY except Country. SkipCash requires them only
-     * for US/UK/Canada cards, and this is a Qatari villa service — collecting a
-     * postal code we have no use for, to satisfy a validation that does not
-     * apply, is a field on the form for nothing. They stay in the list because
-     * the canonical string includes them either way.
+     * so passing it through makes the gateway's record searchable by our
+     * primary key. Address fields other than Country are not collected at all:
+     * SkipCash needs them only for US/UK/Canada cards, and this is a Qatari
+     * villa service.
      */
-    const fields: Array<[string, string]> = [
-      ["Uid", input.bookingId],
-      ["KeyId", this.config.keyId],
-      ["Amount", toDecimalString(input.amount)],
-      ["FirstName", firstName],
-      ["LastName", lastName],
-      ["Phone", input.customer.phone],
-      ["Email", input.customer.email ?? ""],
-      ["Street", ""],
-      ["City", ""],
-      ["State", ""],
-      ["Country", "QA"],
-      ["PostalCode", ""],
-      ["TransactionId", input.reference],
-      ["Custom1", input.reference],
-    ];
+    const fields: Array<[string, string]> = (
+      [
+        ["Uid", input.bookingId],
+        ["KeyId", this.config.keyId],
+        ["Amount", toDecimalString(input.amount)],
+        ["FirstName", firstName],
+        ["LastName", lastName],
+        ["Phone", input.customer.phone],
+        ["Email", email],
+        ["Street", ""],
+        ["City", ""],
+        ["State", ""],
+        ["Country", "QA"],
+        ["PostalCode", ""],
+        ["TransactionId", input.reference],
+        ["Custom1", input.reference],
+      ] as Array<[string, string]>
+    ).filter(([, value]) => value !== "");
+
+    if (!email) {
+      // Loud, because the request is about to fail and the reason is a missing
+      // environment variable rather than anything the customer did.
+      console.error(
+        "[payments/skipcash] no email for this booking and no fallback " +
+          "configured. SkipCash rejects an empty Email. Set " +
+          "BOOKINGS_NOTIFICATION_EMAIL, or turn BOOKING_FORM.email back on.",
+      );
+    }
 
     const body = Object.fromEntries(fields);
 

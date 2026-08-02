@@ -126,8 +126,15 @@ async function checkout() {
     ["Custom1", reference],
   ];
 
+  /**
+   * Empty values are dropped, from the signature AND the body. Verified
+   * against the sandbox: identical request, empties included -> 403
+   * "Signature does not match!", empties dropped -> 200. See skipcash.ts.
+   */
+  const sent = fields.filter(([, value]) => value !== "");
+
   console.log("\nSigned string (compare against dev.skipcash.app):");
-  console.log(`  ${canonical(fields)}`);
+  console.log(`  ${canonical(sent)}`);
   console.log(`\nPOST ${cfg.apiUrl}/api/v1/payments`);
 
   const response = await fetch(`${cfg.apiUrl}/api/v1/payments`, {
@@ -135,10 +142,10 @@ async function checkout() {
     headers: {
       "Content-Type": "application/json",
       // The hash IS the Authorization header. No Signature header, no clientId.
-      Authorization: sign(fields, cfg.secretKey),
+      Authorization: sign(sent, cfg.secretKey),
     },
     body: JSON.stringify({
-      ...Object.fromEntries(fields),
+      ...Object.fromEntries(sent),
       // Unsigned extras: SkipCash hashes its own fixed field list, not the body.
       ReturnUrl: "https://example.com/return",
       Lang: "en",

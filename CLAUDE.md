@@ -724,11 +724,26 @@ The three rules that actually bite:
 1. **The hash IS the `Authorization` header** on checkout. There is no
    `Signature` header, and the client id is not sent. The client id
    authenticates only `GET /api/v1/payments/{id}`; that asymmetry is real.
-2. **The canonical string is case-sensitive literal text.** `Country=QA` and
-   `country=QA` are different messages. Order and casing both come from the
-   docs: `Uid, KeyId, Amount, FirstName, LastName, Phone, Email, Street, City,
-   State, Country, PostalCode, TransactionId, Custom1`. Unsigned extras
-   (`ReturnUrl`, `Lang`, `Custom2`–`Custom10`) go in the body only.
+2. **The canonical string is case-sensitive literal text, and EMPTY FIELDS ARE
+   DROPPED.** Order and casing come from the docs: `Uid, KeyId, Amount,
+   FirstName, LastName, Phone, Email, Street, City, State, Country,
+   PostalCode, TransactionId, Custom1` — but a field with no value is omitted
+   from the signature *and* the body. SkipCash rebuilds its hash from the
+   fields it can see with values, so sending `Street: ""` makes our string say
+   `Street=,City=` where theirs says nothing, and the answer is a bare
+   `Signature does not match!`.
+
+   **Verified against the sandbox**: identical request, empties included → 403;
+   empties dropped → 200. SkipCash's own Node.js sample sends the empties and
+   is wrong; the PHP sample omits them and is right. Their webhook page states
+   the same rule for callbacks, so it is one rule in both directions.
+
+   **`Email` is required** — an empty one is a `400 'Email' must not be empty.`
+   `BOOKING_FORM.email` is off, so `skipcash.ts` falls back to
+   `BOOKINGS_NOTIFICATION_EMAIL` then `EMAIL_REPLY_TO`. One of them must be set.
+
+   Unsigned extras (`ReturnUrl`, `Lang`, `Custom2`–`Custom10`) go in the body
+   only, and are accepted alongside the dropped-empties signature.
 3. **The webhook is signed the same way, with a DIFFERENT key**, over
    `PaymentId, Amount, StatusId, TransactionId, Custom1, VisaId` — optional
    fields included only if present. `SKIPCASH_WEBHOOK_SECRET` is not

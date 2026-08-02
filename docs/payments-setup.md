@@ -126,10 +126,31 @@ catches up — which works, but is a poor experience and up to 30 minutes late.
   **PascalCase**:
   `Uid, KeyId, Amount, FirstName, LastName, Phone, Email, Street, City, State, Country, PostalCode, TransactionId, Custom1`
 - It is a literal string, so `Country=QA` and `country=QA` hash differently.
-  This is the single most likely cause of an unexplained 401.
-- `ReturnUrl`, `Lang` and `Custom2`–`Custom10` go in the body **unsigned**.
-  SkipCash rebuilds its comparison hash from its own fixed field list, not from
-  whatever the body contains.
+- **EMPTY FIELDS ARE DROPPED — from the signature AND the body.** This is the
+  one that costs you an afternoon. SkipCash rebuilds its comparison hash from
+  the fields it can see *with values*; send `Street: ""` and our string says
+  `Street=,City=,State=,PostalCode=` where theirs says nothing, and you get a
+  bare `Signature does not match!` naming nothing.
+
+  Verified against the sandbox — identical request, only this differing:
+
+  | | |
+  | --- | --- |
+  | empties included | **403** `Signature does not match!` |
+  | empties dropped | **200**, `payUrl` returned |
+
+  Their two guides disagree here: the **Node.js** sample sends all fourteen
+  fields with empty strings, the **PHP** one omits the address block entirely.
+  The PHP one is right. The webhook page states the same rule explicitly for
+  callbacks — *"TransactionId and Custom1 are optional, include them if you're
+  using them"* — so it is one rule in both directions.
+
+- **`Email` is REQUIRED.** An empty one is rejected with
+  `400 'Email' must not be empty.` `BOOKING_FORM.email` is off, so the form does
+  not collect one; `skipcash.ts` falls back to `BOOKINGS_NOTIFICATION_EMAIL`,
+  then `EMAIL_REPLY_TO`. **Set one of those or every checkout 400s.**
+- `ReturnUrl`, `Lang` and `Custom2`–`Custom10` go in the body **unsigned** —
+  confirmed accepted alongside the dropped-empties signature.
 
 **Reading a payment back** — `GET {base}/api/v1/payments/{id}`
 
