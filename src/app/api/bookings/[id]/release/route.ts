@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { z } from "zod";
 import { getHold, releaseHold } from "@/lib/booking/holds";
 import { OTP_COOKIE_NAME, verifyOtpToken } from "@/lib/otp/token";
+import { BOOKING_FORM } from "@/lib/booking/formConfig";
 
 const NO_STORE = { "Cache-Control": "no-store" } as const;
 const paramsSchema = z.object({ id: z.string().uuid() });
@@ -33,7 +34,8 @@ export async function POST(
 
   const jar = await cookies();
   const token = jar.get(OTP_COOKIE_NAME)?.value;
-  if (!token) {
+  // Only demanded when the verification step is actually shown to the customer.
+  if (BOOKING_FORM.phoneVerification && !token) {
     return Response.json(
       { error: "phone_not_verified" },
       { status: 403, headers: NO_STORE },
@@ -46,7 +48,7 @@ export async function POST(
   // Decoding the phone from the token without knowing it up front: verify
   // against the booking's own phone, which requires reading the booking first —
   // so read it by id, then check the token against the phone we found.
-  const existing = await getHoldByIdForToken(bookingId, token);
+  const existing = await resolveBookingPhone(bookingId, token);
   if (!existing) {
     return Response.json(
       { error: "not_found" },
@@ -73,15 +75,26 @@ export async function POST(
 }
 
 /**
- * Resolves the booking only if the caller's token attests to its phone.
+ * The booking's phone, if this caller is allowed to act on it.
  *
  * Done in two steps because the token carries the phone and the booking stores
  * it: read the booking, then require the token to be valid FOR THAT phone. A
  * token for another number therefore cannot reach this booking at all.
+ *
+ * The token is only ENFORCED when `BOOKING_FORM.phoneVerification` is on. With
+ * the flag off the wizard never renders the OTP step, so no cookie is ever
+ * issued and demanding one here would refuse every request — which is exactly
+ * what this route and /checkout did until phase 10 caught it. /api/bookings and
+ * /api/bookings/hold had been gated correctly; these two were missed.
+ *
+ * With the flag ON the behaviour is unchanged: a missing token is a 403 at the
+ * call site, and a token that does not match the booking's phone is a 404 here
+ * — identical to "no such booking", so an id cannot be used to probe which
+ * bookings exist.
  */
-async function getHoldByIdForToken(
+async function resolveBookingPhone(
   bookingId: string,
-  token: string,
+  token: string | undefined,
 ): Promise<{ phone: string } | null> {
   const { sql } = await import("@/db/client");
   const rows = await sql<{ customer_phone: string }[]>`
@@ -89,6 +102,12 @@ async function getHoldByIdForToken(
   `;
   const phone = rows[0]?.customer_phone;
   if (!phone) return null;
+
+  if (!BOOKING_FORM.phoneVerification) return { phone };
+
+  // Defensive: the call sites already refuse a missing token with a 403 when
+  // the flag is on, so reaching here without one would be a caller bug.
+  if (!token) return null;
 
   const verdict = verifyOtpToken(token, phone);
   return verdict.valid ? { phone } : null;
@@ -113,14 +132,15 @@ export async function GET(
 
   const jar = await cookies();
   const token = jar.get(OTP_COOKIE_NAME)?.value;
-  if (!token) {
+  // Only demanded when the verification step is actually shown to the customer.
+  if (BOOKING_FORM.phoneVerification && !token) {
     return Response.json(
       { error: "phone_not_verified" },
       { status: 403, headers: NO_STORE },
     );
   }
 
-  const owner = await getHoldByIdForToken(resolved.data.id, token);
+  const owner = await resolveBookingPhone(resolved.data.id, token);
   if (!owner) {
     return Response.json(
       { error: "not_found" },
