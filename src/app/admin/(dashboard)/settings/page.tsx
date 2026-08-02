@@ -5,7 +5,9 @@ import {
   getSettingsAudit,
 } from "@/lib/admin/queries";
 import { adminT } from "@/lib/admin/intl";
+import { readPaymentsStatus } from "@/lib/payments/status";
 import { SettingsForm } from "./SettingsForm";
+import { PaymentsPanel } from "./PaymentsPanel";
 
 export const dynamic = "force-dynamic";
 
@@ -28,6 +30,16 @@ export default async function AdminSettingsPage() {
       </h1>
 
       <SettingsForm settings={settings} drivers={drivers} />
+
+      {/**
+       * Read on the SERVER and passed down as a prop, rather than fetched by
+       * the panel on mount. `readPaymentsStatus()` touches `process.env`, which
+       * does not exist in a browser — reading it here is what keeps the
+       * credential names and their presence flags on the server side of the
+       * boundary. The panel receives presence booleans and four-character
+       * hints, which is all it can ever render.
+       */}
+      <PaymentsPanel status={readPaymentsStatus()} />
 
       <section className="border-border bg-surface rounded-card border p-4">
         <h2 className="text-ink-deep text-sm font-bold">

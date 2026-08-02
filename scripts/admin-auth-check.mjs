@@ -57,6 +57,9 @@ const API_GETS = [
   "/api/admin/settings",
   "/api/admin/recipients",
   "/api/admin/notifications",
+  // Returns no secret even to an authorised caller, but an unauthenticated one
+  // must not learn which gateway is live or whether it is configured.
+  "/api/admin/payments",
 ];
 
 const API_WRITES = [
@@ -90,6 +93,15 @@ const API_WRITES = [
     "/api/admin/notifications/00000000-0000-4000-8000-000000000000/resend",
     null,
   ],
+  /**
+   * The gateway connection test. It reaches out to a payment provider and
+   * creates a record there, so an unauthenticated caller being able to fire it
+   * would be a way to run up activity in the merchant account from outside.
+   * `confirm: true` is passed deliberately — the production acknowledgement
+   * gate sits BEHIND requireAdmin(), and this proves the auth check refuses
+   * first rather than the confirmation happening to stop it.
+   */
+  ["POST", "/api/admin/payments/test", { confirm: true }],
 ];
 
 console.log(`\nAdmin authorisation — unauthenticated caller\nbase ${BASE}\n`);

@@ -46,25 +46,37 @@ Two things worth knowing because they shape the product:
 
 ## Step 2 — Sandbox credentials
 
-SkipCash issues sandbox credentials before production. From the merchant
-dashboard collect:
+SkipCash issues sandbox credentials before production. Developer documentation
+and the sandbox both live at **<https://dev.skipcash.app>**.
 
-| Value | Env var |
-| ----- | ------- |
-| Sandbox API base URL | `SKIPCASH_API_URL` |
-| Client ID | `SKIPCASH_CLIENT_ID` |
-| Key ID | `SKIPCASH_KEY_ID` |
-| Secret key (signs our requests) | `SKIPCASH_SECRET_KEY` |
-| Webhook secret (verifies their callbacks) | `SKIPCASH_WEBHOOK_SECRET` |
+| Value | Env var | Used for |
+| ----- | ------- | -------- |
+| API base URL | `SKIPCASH_API_URL` | see the two hosts below |
+| Client ID | `SKIPCASH_CLIENT_ID` | **only** the GET that reads a payment back |
+| Key ID | `SKIPCASH_KEY_ID` | sent as the `KeyId` field, so it is inside the signature |
+| Secret key | `SKIPCASH_SECRET_KEY` | signs our outbound checkout requests |
+| **Webhook key** | `SKIPCASH_WEBHOOK_SECRET` | verifies their callbacks — **a different value** |
 
 ```bash
 PAYMENT_PROVIDER=skipcash
-SKIPCASH_API_URL=https://skipcashtest.azurewebsites.net
+SKIPCASH_API_URL=https://skipcashtest.azurewebsites.net   # production: https://api.skipcash.app
 SKIPCASH_CLIENT_ID=
 SKIPCASH_KEY_ID=
 SKIPCASH_SECRET_KEY=
 SKIPCASH_WEBHOOK_SECRET=
 ```
+
+Two things people get wrong here, both of which fail in ways that do not say
+what is wrong:
+
+- **The webhook key is not the secret key.** SkipCash issues it separately
+  ("use the webhook key, find in merchant portal account"). Using the payment
+  secret for both means every callback is rejected as a forgery — and because
+  the reconcile cron then picks the payment up anyway, the symptom is not
+  "payments are broken" but "payments confirm several minutes late, sometimes".
+  `pnpm payments:probe config` warns if the two values are identical.
+- **The client id is not an API key for checkout.** Checkout is authenticated by
+  the signature alone. The client id authenticates only `GET /api/v1/payments/{id}`.
 
 `PAYMENT_PROVIDER` must be a real provider in production — the app **refuses to
 start** with the mock in a production build, rather than confirming bookings for
@@ -91,28 +103,82 @@ catches up — which works, but is a poor experience and up to 30 minutes late.
 
 ## Step 4 — Verify against the sandbox
 
-> ⚠️ **The SkipCash wire format in this codebase is unverified.** No merchant
-> account existed when it was written, so `src/lib/payments/skipcash.ts` follows
-> SkipCash's published integration pattern but has never been exercised against
-> their servers. Two things are most likely to need adjusting, both marked
-> `ADJUST-ON-SANDBOX` in that file:
+> **The wire format now matches the published spec, but has still not been run
+> against a live sandbox.** `src/lib/payments/skipcash.ts` was rewritten against
+> <https://dev.skipcash.app/doc/api-integration/nodejs/> and
+> <https://dev.skipcash.app/doc/web-hooks/> — before that it was written from
+> the general integration pattern and was wrong in four ways, each fatal (the
+> Authorization scheme, the field casing, the webhook signature basis, and two
+> transposed status codes). It is a different kind of unverified now: it matches
+> the documentation rather than a guess at it. It still needs credentials.
 >
-> 1. the ordered field list used to build the request signature
-> 2. the field names on the webhook body
->
-> Everything security-relevant — verify-before-parse, timing-safe comparison,
-> rejecting unsigned calls, idempotency, transactional settlement — is provider
-> independent and fully tested.
+> Everything security-relevant — timing-safe comparison, rejecting unsigned
+> calls, idempotency, transactional settlement — is provider independent and
+> fully tested.
 
-Once credentials exist:
+### The wire format, for when something 401s
+
+**Checkout** — `POST {base}/api/v1/payments`
+
+- Signature: `HMAC-SHA256(secretKey, canonical)` → base64, in the
+  **`Authorization`** header. There is no `Signature` header.
+- `canonical` is `Key=Value` pairs joined by commas, in this exact order and
+  **PascalCase**:
+  `Uid, KeyId, Amount, FirstName, LastName, Phone, Email, Street, City, State, Country, PostalCode, TransactionId, Custom1`
+- It is a literal string, so `Country=QA` and `country=QA` hash differently.
+  This is the single most likely cause of an unexplained 401.
+- `ReturnUrl`, `Lang` and `Custom2`–`Custom10` go in the body **unsigned**.
+  SkipCash rebuilds its comparison hash from its own fixed field list, not from
+  whatever the body contains.
+
+**Reading a payment back** — `GET {base}/api/v1/payments/{id}`
+
+- Authenticated with the **client id** in `Authorization`, not a signature.
+  The asymmetry with POST is real.
+
+**Webhook** — SkipCash POSTs to the URL configured in the portal
+
+- Signature in **`Authorization`**, computed with the **webhook key** over the
+  same kind of canonical string:
+  `PaymentId, Amount, StatusId, TransactionId, Custom1, VisaId`
+- `TransactionId` and `Custom1` are optional: **include them only if they were
+  sent**, keeping the order of the rest. An empty `TransactionId=` for a field
+  SkipCash never sent produces a different hash.
+- Body fields: `PaymentId`, `Amount`, `StatusId`, `TransactionId`,
+  `Custom1`–`Custom10`, `VisaId`, `TokenId`, `CardType`, `CardNumber`,
+  `RecurringSubscriptionId`. `CardNumber` is why `redactSensitive` exists — it
+  is stripped before anything is stored.
+- SkipCash retries **3 times** on a non-200: immediately, after 1 hour, after
+  1 day. Request timeout is **10 seconds**, which is why nothing is ever sent
+  from inside that handler.
+
+**`statusId`**
+
+| id | meaning | maps to |
+| -- | ------- | ------- |
+| 0 | new | `pending` |
+| 1 | pending | `pending` |
+| 2 | paid | `paid` |
+| 3 | canceled | `cancelled` |
+| 4 | failed | `failed` |
+| 5 | rejected | `failed` |
+| 6 | refunded | `refunded` |
+| 7 | pending refund | `paid` — the money still arrived |
+| 8 | refund failed | `paid` |
+| 12 | customer started payment process | `pending` |
+
+### Running it
 
 ```bash
-pnpm payments:probe checkout    # create a sandbox checkout, print the pay URL
-pnpm payments:probe status <ref>   # read a transaction back
+pnpm payments:probe config          # what is configured, and which host
+pnpm payments:probe checkout        # QAR 1.00 sandbox checkout, prints the pay URL
+pnpm payments:probe status <ref>    # read it back, with the statusId decoded
+pnpm payments:probe webhook <paymentId> <amount> <statusId> [transactionId] [custom1] [visaId]
+                                    # compute a callback signature + a curl that replays it
 ```
 
-The probe prints the exact string it signed, which is what you need to compare
-against SkipCash's documentation if authentication fails.
+The probe prints the exact string it signed. If checkout 401s, compare that
+line against the docs before changing anything else.
 
 Then run the real flow end to end from a phone:
 

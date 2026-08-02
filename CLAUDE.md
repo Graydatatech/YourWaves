@@ -89,15 +89,24 @@ pnpm dev           # dev server
 pnpm build         # production build
 pnpm lint          # ESLint, incl. the RTL rule
 pnpm typecheck     # tsc --noEmit
-pnpm verify        # lint + typecheck (what pre-commit runs)
+pnpm verify        # lint + typecheck + check:contrast (what pre-commit runs)
+pnpm ci            # verify + build + check:bundle
 pnpm format        # Prettier write
+
+# No build, no browser, no database — pure arithmetic on the source files:
+pnpm check:contrast    # 76 WCAG pairs, read from globals.css + email theme.ts
 
 # Verification against a running production build (pnpm build && pnpm start):
 pnpm check:layout      # real browser: overflow, nav rows, tap targets, type scale
 pnpm check:booking     # calendar cell floor, RTL mirroring, locale-switch state
 pnpm check:lighthouse  # Lighthouse mobile; THROTTLING=devtools for applied throttling
 pnpm check:success     # success/failed pages, 320-414px, both locales
+pnpm check:a11y        # lang/dir, accessible names, focus rings, reduced motion
+pnpm check:bundle      # gzipped first-load JS vs bundle-budget.json (needs a build)
+pnpm check:bundle:update   # re-baseline it; commit the diff
+pnpm gen:qa-screenshots    # 11 screens x 2 locales x 390/768/1440 → docs/qa-screenshots/
 pnpm gen:placeholders  # regenerate public/media/* placeholder imagery
+pnpm gen:og-fonts      # fetch the two faces the OG card needs into public/fonts/
 
 # Payments (need a dev server: mock is refused in a production build, by design)
 pnpm payments:e2e      # hold → checkout → signed webhook → confirmed → date gone
@@ -195,7 +204,8 @@ hex value in a component** — add a token first.
 | `--accent-light`                          | `#7ff2ea`                                               | `*-accent-light`     |
 | `--ink`                                   | `#0b2a3d`                                               | `text-ink`           |
 | `--ink-deep`                              | `#04141f`                                               | `text-ink-deep`      |
-| `--muted` / `--muted-2` / `--muted-3`     | `#4a6577` / `#587488` / `#5f7c8e`                       | `text-muted*`        |
+| `--muted` / `--muted-2` / `--muted-3`     | `#425a6b` / `#4c6475` / `#516a7a`                       | `text-muted*`        |
+| `--danger` / `--danger-surface`           | `#c82020` / `#fdeceb`                                   | `text-danger`, `bg-danger-surface` |
 | `--surface`                               | `#ffffff`                                               | `bg-surface`         |
 | `--border`                                | `rgba(11,42,61,.09)`                                    | `border-border`      |
 | `--footer`                                | `#04202f`                                               | `bg-footer`          |
@@ -204,10 +214,17 @@ hex value in a component** — add a token first.
 | `--radius-card` / `-input` / `-pill`      | `24px` / `14px` / `999px`                               | `rounded-card` etc.  |
 
 **Composite backgrounds** — `bg-page`
-(`radial-gradient(1100px 640px at 82% -8%,#d3ecf6 0%,transparent 58%)` over
-`linear-gradient(180deg,#f5fafd 0%,#e9f3f8 62%,#e1edf4 100%)`, applied to
+(`radial-gradient(1100px 640px at var(--glow-x) -8%,#d3ecf6 0%,transparent 58%)`
+over `linear-gradient(180deg,#f5fafd 0%,#e9f3f8 62%,#e1edf4 100%)`, applied to
 `<html>`) and `bg-dark-panel`
-(`repeating-linear-gradient(135deg,#0a2c46 0 16px,#0c3654 16px 32px)`).
+(`repeating-linear-gradient(var(--hatch-angle),#0a2c46 0 16px,#0c3654 16px 32px)`).
+
+**`--glow-x` and `--hatch-angle` mirror in RTL** (82%→18%, 135deg→45deg).
+`background-image` has no logical form — a gradient is described in physical
+coordinates and stays put when the document mirrors — so without these the
+page's light source ends up on the side an Arabic reader's eye *leaves* from.
+`--brand-gradient` is deliberately NOT mirrored: it is an identity asset, and a
+logo is not flipped between languages.
 
 **Extra utilities** — `glass` (translucent + blur), `glass-header` (the header's
 `rgba(245,250,253,.82)` + blur), `tap-target` (44x44 minimum), `shell` (centred
@@ -222,13 +239,64 @@ layout: the header swaps to its desktop row AND the booking flow swaps from a
 wizard to two columns. One breakpoint, one name — do not add a second token at
 the same value.
 
-### Contrast: `--accent` vs `--accent-strong`
+### Contrast: audit against the PAINTED background, not against white
 
-`--accent` (#0b8fa3) is **3.84:1 on white — it fails WCAG AA for text under
-18.66px**. Use `--accent-strong` (#0a7a8c, 5.03:1) for small text such as
-kickers and eyebrow tags. `--accent` remains correct for icons, fills, borders
-and large text. Likewise `--muted-3` (#5f7c8e) is 4.41:1 and fails as small
-text — use `--muted` (6.14:1) or `--muted-2` (4.92:1) instead.
+**The single most repeated mistake on this project.** Until phase 10 the ramp
+was solved against `#ffffff` — but `<html>` carries `--page-background`, and
+almost no text on this site sits on white. Against the background actually
+painted behind it, `--muted-2` measured 4.13:1, `--muted-3` 3.70:1,
+`text-red-600` 4.05:1, and `--accent-strong` — the token that exists
+*specifically* to be the AA-safe one — 4.22:1. Four AA failures that a
+white-background audit cannot see.
+
+The ramp is now solved against `#e1edf4` (the gradient's darkest stop) and
+verified against `#d3ecf6` (the radial's peak):
+
+| Token | white | `#e9f3f8` | `#e1edf4` | `#d3ecf6` |
+| --- | --- | --- | --- | --- |
+| `--muted` `#425a6b` | 7.23 | 6.41 | 6.06 | 5.88 |
+| `--muted-2` `#4c6475` | 6.20 | 5.50 | 5.20 | 5.05 |
+| `--muted-3` `#516a7a` | 5.69 | 5.05 | 4.77 | 4.63 |
+| `--accent-strong` `#097182` | 5.68 | 5.04 | 4.77 | 4.63 |
+| `--danger` `#c82020` | 5.70 | 5.06 | 4.78 | 4.64 |
+
+`--accent` (#0b8fa3) is **3.84:1 on white and 3.12:1 on the page gradient — it
+is not a text colour.** Use `--accent-strong` for small text (kickers, eyebrow
+tags); `--accent` remains correct for icons, fills, borders and large text,
+where the bar is 3:1.
+
+**Use `--danger`, never `text-red-*`.** Tailwind's red-600 fails AA on the page
+gradient, and form errors are the copy a user most needs to read.
+
+The bottom of the ramp sits slightly above 4.5 rather than on it: an earlier
+pass solved `--muted-3` to exactly 4.50 and the check failed on floating-point
+rounding. A token that needs the audit to round in its favour is not one to ship.
+
+`pnpm check:contrast` recomputes all 76 pairs from `globals.css`, the email
+`theme.ts` and the `TONE` map in `StatusPill.tsx`, and **runs in the pre-commit
+hook** — it needs no build, no browser and no database.
+
+The admin status pills are read from source for a reason: they are literal hex
+in Tailwind arbitrary values, so each is a colour pair that occurs nowhere else
+and no token audit covers them. `expired` sat at 4.34:1 from phase 8 until
+phase 10 found it. **Keep the `bg-[#…] text-[#…]` shape in that order** — the
+parser depends on it.
+
+### Focus rings: `--focus-ring`, and `.on-dark`
+
+`:focus-visible` draws `2px solid var(--focus-ring, var(--accent-strong))` at
+`outline-offset: 2px`, so the ring lands on the SECTION background rather than
+the control's fill — which is why one colour per section is enough. But no
+single colour is good on every section: `--accent-strong` is 4.77:1 on the page
+gradient and **2.53:1 on the dark panel**. Dark sections therefore set
+`--focus-ring: var(--accent-light)` via the **`.on-dark`** class (currently the
+hero and the footer). **A new dark section needs that class** — the contrast
+check verifies the two colours, but it cannot tell whether a section remembered
+to opt in.
+
+Components that need their own `outline-offset` use the **`outline-focus`**
+utility, which resolves through the same variable. Do not write
+`outline-accent`.
 
 **Animations** — `animate-floaty` (6s, translateY -10px), `animate-rise-in`
 (.8s, opacity + translateY 18px), `animate-shimmer` (skeleton sweep, animates
@@ -643,14 +711,76 @@ taking no money would look like it was working.
 Signatures are computed over exact bytes and re-serialising JSON changes them.
 The route reads `request.text()` once and passes it straight through.
 
-⚠️ **The SkipCash wire format is UNVERIFIED.** No merchant account exists —
-onboarding, fees and subscriptions are the client's responsibility per the SRS
-operational notice. Two things are marked `ADJUST-ON-SANDBOX` in
-[src/lib/payments/skipcash.ts](src/lib/payments/skipcash.ts): the ordered field
-list for the request signature, and the webhook body field names.
-`pnpm payments:probe` prints the exact string being signed. What is *not*
-guesswork is the part that protects the money — verify before parse, timing-safe
-compare, reject unsigned.
+### The SkipCash wire format — now from the docs, not from a guess
+
+[src/lib/payments/skipcash.ts](src/lib/payments/skipcash.ts) is written against
+**<https://dev.skipcash.app>** (`/doc/api-integration/nodejs/` and
+`/doc/web-hooks/`). It previously followed the general integration pattern and
+was wrong in four ways, each of which would have broken the flow completely —
+they are listed at the top of that file so the same guesses are not made again.
+
+The three rules that actually bite:
+
+1. **The hash IS the `Authorization` header** on checkout. There is no
+   `Signature` header, and the client id is not sent. The client id
+   authenticates only `GET /api/v1/payments/{id}`; that asymmetry is real.
+2. **The canonical string is case-sensitive literal text.** `Country=QA` and
+   `country=QA` are different messages. Order and casing both come from the
+   docs: `Uid, KeyId, Amount, FirstName, LastName, Phone, Email, Street, City,
+   State, Country, PostalCode, TransactionId, Custom1`. Unsigned extras
+   (`ReturnUrl`, `Lang`, `Custom2`–`Custom10`) go in the body only.
+3. **The webhook is signed the same way, with a DIFFERENT key**, over
+   `PaymentId, Amount, StatusId, TransactionId, Custom1, VisaId` — optional
+   fields included only if present. `SKIPCASH_WEBHOOK_SECRET` is not
+   `SKIPCASH_SECRET_KEY`; using one for both fails closed and presents as
+   "bookings confirm minutes late", because the reconcile cron covers for it.
+
+Status ids are enumerated in
+[docs/payments-setup.md](docs/payments-setup.md); note that 7 and 8 are refund
+*lifecycle* and still mean the money arrived, so they map to `paid`.
+
+### The credentials are NOT editable from the back office, deliberately
+
+There is a **read-only** Payments panel on /admin/settings
+([PaymentsPanel.tsx](<src/app/admin/(dashboard)/settings/PaymentsPanel.tsx>),
+fed by [src/lib/payments/status.ts](src/lib/payments/status.ts)): which provider
+is live, sandbox vs production, which credentials are present — **last four
+characters only** — the webhook URL to register, and a "Test connection" button.
+
+It was asked whether these should be editable like pricing and service areas.
+They should not, and the reasoning is worth keeping because it will be asked
+again:
+
+- `SKIPCASH_SECRET_KEY` signs requests that move money and
+  `SKIPCASH_WEBHOOK_SECRET` is the only thing between a stranger and a confirmed
+  booking. In the environment, a database compromise leaks customer data. In the
+  `settings` table, it also hands over the ability to create payments and forge
+  webhooks as us — and this app connects as the table OWNER, which migration
+  0003 exempted from RLS, so the policies would not contain it.
+- Encrypting at rest answers that, but the encryption key still has to live in
+  the environment. It trades five env secrets for one and adds key management.
+  Worth doing **only** if self-service rotation is genuinely needed; the shape
+  is `SETTINGS_ENC_KEY` + AES-256-GCM, not plain columns.
+- `PAYMENT_PROVIDER` and `SKIPCASH_API_URL` stay in the environment too, so
+  going live is a deliberate act with a review behind it and nobody can point
+  production at the sandbox from a phone.
+
+**The test writes nothing to our database** — no booking, no hold, no payment
+row. It calls the provider and discards the result, so a failed test cannot
+leave a half-built booking behind and a successful one cannot occupy a date. On
+production it requires `{confirm: true}`, because it does put a QAR 1.00 line in
+the merchant's real ledger (no money moves unless someone pays it). The sandbox
+has no gate — a confirmation there would only train people to click through it.
+
+The panel warns about the one misconfiguration that hides itself: **secret key
+and webhook key set to the same value.** Checkout keeps working while every
+callback is rejected, so bookings still confirm — just minutes late, via the
+reconcile cron. It reads as "sometimes slow", not as a fault.
+
+⚠️ **Still not exercised against a live sandbox** — no merchant credentials
+exist; onboarding, fees and subscriptions are the client's responsibility per
+the SRS operational notice. `pnpm payments:probe` prints the exact string being
+signed and decodes the status id.
 
 ### Money
 
@@ -663,9 +793,22 @@ The client never sends an amount and is ignored when it does — the E2E run pos
 ### The webhook is the only thing that confirms
 
 Order in the route is load-bearing: read raw text → **verify signature** → only
-then settle. Unsigned or wrongly-signed gets **401 and is never parsed**, and the
-body is deliberately *not* logged: it is attacker-controlled and could contain
-card-shaped data planted to get it written to our logs.
+then settle. Unsigned or wrongly-signed gets **401**, and the body is
+deliberately *not* logged: it is attacker-controlled and could contain
+card-shaped data planted to get it written to our logs. SkipCash's webhook does
+send `CardNumber`, which is what `redactSensitive` is for.
+
+**"Never parsed" is provider-dependent, and SkipCash is the exception.** The
+mock hashes the raw bytes, so it verifies without parsing. SkipCash hashes a
+canonical field list, which cannot be assembled without parsing first — so
+`SkipCashProvider.verifyWebhook` goes parse → verify → act. That is forced by
+the scheme, not a relaxation: the rule exists so that nothing is *acted on* or
+*logged* before verification, and both still hold. `JSON.parse` on a string is
+not itself the dangerous step; trusting the result is, and nothing does until
+the hash matches.
+
+The **10-second** timeout on SkipCash's callback (3 retries: immediate, +1h,
++1d) is the other reason nothing is ever sent from inside that handler.
 
 Status codes: **200** once a signed event is recorded, *including* duplicates and
 unknown payments — a 4xx/5xx makes the provider retry, and retrying cannot fix an
@@ -1152,17 +1295,131 @@ link working.
 
 ---
 
+## 4j. SEO, budgets and the audit floor (phase 10)
+
+No new features. The full write-up, including everything that was NOT measured,
+is [docs/performance.md](docs/performance.md) — **read that before quoting any
+performance claim from this phase.**
+
+### The metadata rules that are easy to get backwards
+
+[src/lib/seo.ts](src/lib/seo.ts) is the only place the origin, the canonical and
+the hreflang cluster are defined, so the `<head>`, the sitemap and the JSON-LD
+cannot disagree.
+
+- **The canonical for `/en` is `/en`.** Pointing it at the default locale tells
+  Google the English page is a duplicate that should not be indexed.
+- **`x-default` is the ARABIC page** — the default locale, for a Qatari
+  business. Reaching for English is the reflex and it is wrong here.
+- **OpenGraph locales are `ar_QA` / `en_QA`.** WhatsApp and Facebook ignore a
+  bare `ar`, and WhatsApp is how a large share of this site's traffic arrives.
+- **`[locale]/layout.tsx` defaults to `robots: { index: false }`** and the
+  marketing page opts in. That makes the booking success/failure pages — keyed
+  by reference, naming a real customer's order — noindex by default rather than
+  by somebody remembering.
+
+### The OG card cannot be allowed to fail the build
+
+`opengraph-image.tsx` renders through Satori, which has **no system fonts** and
+throws rather than falling back — and a throw in a metadata route at build time
+is a failed deploy. So it reads a face from `public/fonts/` and returns a
+**text-free** card if the directory is empty. `pnpm gen:og-fonts` populates it;
+commit the two files. The fetch is a script, deliberately not a build step: a
+build that reaches out to Google Fonts is a build that fails when Google Fonts
+is slow.
+
+Satori also has no bidi algorithm, so the RTL card expresses direction through
+`flexDirection`/`textAlign` and its copy avoids inline numbers entirely — there
+is nothing in there to isolate a mixed run with.
+
+### Error boundaries do not read the message catalogue
+
+`[locale]/error.tsx` and `global-error.tsx` hold their copy inline. An error
+boundary has to work in the situation where the rest of the app did not, and
+`messages/*.json` is part of the rest of the app: a malformed catalogue or a
+failed locale import renders these components, and a `useTranslations` call
+would throw MISSING_MESSAGE on top of the original error and turn a recoverable
+page blank. It also keeps those strings out of `CLIENT_NAMESPACES`.
+
+The two locale-less pages (root `not-found.tsx`, `global-error.tsx`) say it in
+**both languages**, each half carrying its own `lang`/`dir`. Somebody who lands
+on a URL that resolved no locale has told us nothing about their language — not
+even the preference a working URL would have carried.
+
+### Lazy boundaries: where the chunk is fetched
+
+`next/dynamic` fetches when a component **enters the tree**, not when it becomes
+visible. Both lazy boundaries in this project depend on that:
+
+- [BookingFlowLazy](src/components/booking/BookingFlowLazy.tsx) gates the whole
+  wizard behind an IntersectionObserver (800px rootMargin) *or*
+  `requestIdleCallback`, whichever fires first. The idle trigger is not
+  redundant — it covers `#booking` deep links, the header CTA, and Safari's late
+  observer. `BookingSection` imports it from the module and **not** from the
+  `@/components/booking` barrel, which also exports `BookingFlow`.
+- `MapPicker` in LocationStep is only put into the tree after the first tap
+  (`mapEverOpened`). Rendering it with `open={false}` would have defeated the
+  split entirely.
+
+### Fonts: declare a weight only if something resolves to it
+
+next/font emits one file per weight per subset and downloads it whether or not
+anything uses it. Phase 10 removed **Sora 600** (nothing reaching
+`--font-display` asks for it — headings are 700/800) and **IBM Plex Sans Arabic
+500** (no `font-medium` exists in the project; and being the default locale with
+two subsets, that was two files on the critical path). Re-run the census before
+adding one:
+
+```bash
+grep -rhoE '\bfont-(normal|medium|semibold|bold|extrabold)\b' src | sort | uniq -c
+```
+
+`preload` stays **false** — see the long note in [src/lib/fonts.ts](src/lib/fonts.ts).
+
+### Images are imported as MODULES
+
+`import heroPoster from "../../../public/media/hero-poster.jpg"`, not
+`src="/media/…"`. `placeholder="blur"` is **silently ignored** with a string
+src, and the module form is also what gives intrinsic dimensions and a
+content-hashed URL — which is what makes `minimumCacheTTL: 31536000` safe.
+`public/` is outside the `@/*` alias, so these imports are relative by
+necessity; it is the one place that is correct.
+
+### The bundle budget is a ratchet
+
+`bundle-budget.json` holds the committed per-route baseline for gzipped
+first-load JS. `pnpm check:bundle` fails at +2%; `pnpm check:bundle:update`
+rewrites it so the increase lands in a diff where it can be argued about. A
+watched route vanishing from the build manifest is a **failure**, not a silent
+skip.
+
+### Verification
+
+```bash
+pnpm check:contrast       # 76 pairs; no build, no browser — runs in pre-commit
+pnpm check:a11y           # lang/dir, names, focus rings, reduced motion (needs a server)
+pnpm check:bundle         # needs a build
+pnpm gen:qa-screenshots   # needs a PRODUCTION server, not dev — see §4i
+```
+
+---
+
 ## 5. Folder structure
 
 ```
 src/
 ├── app/
 │   ├── layout.tsx              # pass-through root layout (no <html>: locale unknown here)
-│   ├── not-found.tsx           # locale-less 404; renders its own document shell
+│   ├── not-found.tsx           # locale-less 404; BILINGUAL, own document shell
+│   ├── global-error.tsx        # root-layout failure; bilingual, own document shell
+│   ├── sitemap.ts · robots.ts  # /sitemap.xml, /robots.txt — app root, not [locale]
 │   ├── globals.css             # design tokens + @theme + utilities + base layer
 │   └── [locale]/
 │       ├── layout.tsx          # the real shell: <html lang dir>, fonts, intl provider
-│       ├── page.tsx            # home (placeholder until the landing-page phase)
+│       ├── page.tsx            # home: marketing sections + JSON-LD
+│       ├── not-found.tsx       # translated 404 (the root one is for locale-less URLs)
+│       ├── error.tsx           # translated 500; copy is INLINE, see §4j
+│       ├── opengraph-image.tsx # generated share card, one per locale
 │       └── styleguide/         # dev-only design system reference (404s in production)
 ├── admin/                      # (under app/) the back office; English-only, §4h
 │   ├── layout.tsx              # document shell only — login lives here too
@@ -1205,6 +1462,8 @@ src/
 │   ├── admin/bookings/[reference]/dispatch/route.ts  # POST — add / resend
 │   ├── admin/dispatch/[id]/route.ts      # DELETE — revoke ONE recipient's link
 │   ├── admin/photos/[id]/route.ts        # GET — one photo's bytes, admin only
+│   ├── admin/payments/route.ts           # GET — gateway config, NO secrets (§4f)
+│   ├── admin/payments/test/route.ts      # POST — live credential check
 │   ├── otp/send/route.ts       # POST — rate-limited code issue
 │   ├── otp/verify/route.ts     # POST — issues the verification cookie
 │   └── settings/route.ts       # GET public config
@@ -1223,11 +1482,15 @@ src/
 │   ├── notifications/          # outbox worker, transports, templates — §4g
 │   ├── dispatch/               # token, job resolution, actions, photos — §4i
 │   ├── admin/                  # session + RLS-scoped queries/mutations — §4h
+│   ├── seo.ts                  # origin, canonical, hreflang, OG locales — §4j
+│   ├── jsonLd.ts               # LocalBusiness / Service / FAQPage / WebSite
 │   └── fonts.ts                # next/font declarations
 ├── proxy.ts                    # Next 16 middleware: redirects / → /ar
 └── global.d.ts                 # types message keys against the real catalogue
 messages/                       # ar.json, en.json — flat-ish namespaced catalogues
 eslint-rules/                   # custom lint rules
+bundle-budget.json              # committed first-load JS baseline — §4j
+docs/qa-screenshots/            # generated; both locales at 390/768/1440
 ```
 
 **Import rules**
@@ -1386,9 +1649,14 @@ commit is the hook doing its job, so fix the code rather than passing
       **Things a future session cannot infer from the code:**
       - **SkipCash is UNVERIFIED against a live sandbox** — no merchant account
         exists, and onboarding is the client's responsibility (SRS operational
-        notice). The two guessed parts are marked `ADJUST-ON-SANDBOX`. Everything
-        that protects the money is exercised, because the mock provider signs its
-        webhooks for real rather than trusting everything.
+        notice). Everything that protects the money IS exercised, because the
+        mock provider signs its webhooks for real rather than trusting
+        everything.
+      - **The wire format was rewritten later against dev.skipcash.app** and the
+        phase-6 version was wrong in four fatal ways — see §4f and the header of
+        `src/lib/payments/skipcash.ts`. If you are reading this note for
+        history: the `ADJUST-ON-SANDBOX` markers it used to mention are gone,
+        and the guesses they marked were all incorrect.
       - Therefore the "sandbox from a real phone" acceptance criterion is NOT met
         and cannot be until the client provisions a merchant account. The same
         gap as the WhatsApp Cloud channel in phase 4.
@@ -1508,8 +1776,65 @@ commit is the hook doing its job, so fix the code rather than passing
         `yw_dispatch_job` body is in docs/whatsapp-templates.md, generated.
       - `driver_unassigned` is **still** missing; reassignment reuses the
         cancellation copy for the outgoing driver. Carried forward from phase 8.
-- [ ] Phase 10 — Content, SEO & analytics
-- [ ] Phase 11 — Performance & accessibility audit
+- [~] **Phase 10 — Performance, SEO, accessibility, RTL hardening.**
+      *Partially complete: every code change is in, no measurement was possible.*
+      Contrast ramp re-solved against the real background (5 tokens changed, a
+      new `--danger` replacing `text-red-*` across 9 files), `--focus-ring` +
+      `.on-dark`, the booking wizard and map picker split into their own chunks,
+      two dead font weights removed, blur placeholders via static image imports,
+      full SEO layer (canonical + hreflang + x-default, generated OG card,
+      JSON-LD, sitemap, robots) and four error pages. **76 contrast pairs
+      checked and passing; four new guard scripts written.** See §4j and
+      **[docs/performance.md](docs/performance.md)**.
+      **Things a future session cannot infer from the code:**
+      - **NOTHING WAS MEASURED. There are no before/after Lighthouse numbers,**
+        and the brief's headline deliverable is therefore unmet. The machine had
+        **no Node.js runtime at all** — `node`, `npm` and `pnpm` all absent,
+        `node_modules` never installed — plus no `.env.local` and no Postgres.
+        That blocked `build`, `check:lighthouse`, WebPageTest, every puppeteer
+        script, `check:bundle` and `vitest`. Chrome IS installed, so everything
+        runs the moment there is a Node install; `docs/performance.md` ends with
+        the exact sequence and an empty results table to fill in. **Do not quote
+        any performance claim from this phase as measured** — §1 of that document
+        is reasoned only.
+      - **The contrast finding generalises, and it is the important one.** The
+        ramp had been audited against WHITE, but `<html>` paints a gradient.
+        Against the real background `--muted-2`, `--muted-3`, `red-600` and —
+        worst — `--accent-strong`, the token that exists *specifically* to be
+        the AA-safe one, all failed. Same bug in the email palette for the same
+        reason (text sits on `page`/`panel`/`dangerBg`, not white). If you add a
+        colour, `pnpm check:contrast` is in the pre-commit hook.
+      - **Font preloading was deliberately NOT switched on**, against the letter
+        of the brief. `preload` is per-family and all three are declared for
+        every route, so "only the above-fold faces" is not expressible through
+        that API — and doing it by hand would trade phase 1's measured win for a
+        guess, in a session with no way to measure. Reasoning is in
+        `src/lib/fonts.ts`.
+      - **Three artefacts do not exist yet and each needs one successful run:**
+        `bundle-budget.json` (needs a build), `public/fonts/*.ttf` (needs
+        `pnpm gen:og-fonts`; until then the OG card renders in its text-free
+        fallback form, by design rather than by failure), and
+        `docs/qa-screenshots/` (needs a production server).
+      - **`NEXT_PUBLIC_SITE_URL` is still unset**, so canonicals resolve to
+        localhost and `robots.txt` deliberately omits the sitemap line rather
+        than pointing a crawler at it. None of the SEO work is live until it is
+        set.
+      - **The RTL walk found three real bidi bugs**, all on the dispatch job
+        sheet, all `dir="ltr"` where `auto` was correct — the arrival time and
+        the price both resolve RTL in Arabic because the meridiem (`ص`) and the
+        currency (`ر.ق.`) are strong RTL characters. Exactly the failure §4
+        documents. It also found `/d/layout.tsx` with **no `lang` and no `dir`**
+        at all, a flat WCAG 3.1.1 failure.
+      - **No VoiceOver pass.** It needs a real iOS device and cannot be
+        automated; `pnpm check:a11y` covers the automatable subset only.
+      - The muted ramp is now compressed (5.69–7.23 on white, from 4.41–6.14).
+        If the design wants more separation between the muted levels, the lever
+        is the page background, not the greys.
+      - **Analytics was not in scope as briefed** — the phase-10 prompt replaced
+        the original "Content, SEO & analytics" scope with performance/SEO/a11y/
+        RTL. No analytics provider is wired up.
+- [ ] Phase 11 — Performance & accessibility audit *(largely absorbed into 10;
+      what remains is the measurement pass and the VoiceOver run)*
 - [ ] Phase 12 — Launch hardening
 
 > Tick a phase here as the **last** step of that phase, and note anything a

@@ -14,33 +14,63 @@ import {
 /**
  * SkipCash — the Qatari gateway named in the SRS.
  *
- * ⚠️ UNVERIFIED AGAINST A LIVE SANDBOX. No merchant account exists for this
- * project yet (onboarding is the client's responsibility — see
- * docs/payments-setup.md), so the request shape and signature scheme below are
- * written from SkipCash's published integration pattern and have NOT been
- * exercised against their servers.
+ * WRITTEN AGAINST THE PUBLISHED SPEC at https://dev.skipcash.app —
+ * `/doc/api-integration/nodejs/` for checkout and `/doc/web-hooks/` for the
+ * callback. The previous version of this file was written from the general
+ * integration pattern before those pages had been read, and it was wrong in
+ * four ways that would each have broken the flow completely:
  *
- * The two things most likely to need adjusting are marked ADJUST-ON-SANDBOX:
- * the exact ordered field list used for the request signature, and the field
- * names on the webhook body. Both are isolated here so correcting them touches
- * nothing else. `pnpm payments:probe` (scripts/payments-probe.mjs) exists to
- * check them against the sandbox as soon as credentials exist.
+ *   1. it sent `Authorization: <clientId>` and a separate `Signature` header.
+ *      SkipCash puts THE HASH ITSELF in Authorization and has no Signature
+ *      header. Every checkout would have been rejected.
+ *   2. it signed `street`/`city`/`state`/`country`/`postalCode` in lower case.
+ *      The canonical string is literal text, so PascalCase is load-bearing —
+ *      the hash would never have matched.
+ *   3. it verified the webhook by hashing the RAW BODY. SkipCash hashes a
+ *      canonical field list, exactly like the outbound request. Every genuine
+ *      webhook would have been rejected as a forgery.
+ *   4. its status codes had `canceled` and `failed` swapped, read 5 as
+ *      "refunded" when 5 is "rejected", and had no mapping for the real
+ *      refund code (6).
  *
- * What is NOT guesswork, and is what actually protects the money:
- *   - the webhook signature is verified before the body is parsed
+ * ⚠️ STILL NOT EXERCISED AGAINST A LIVE SANDBOX — no merchant credentials
+ * exist yet (onboarding is the client's, see docs/payments-setup.md). It now
+ * matches the documentation rather than a guess at it, which is a different
+ * kind of unverified, but it is still unverified. `pnpm payments:probe`
+ * prints the exact string it signs.
+ *
+ * What protects the money, unchanged:
+ *   - the signature is checked before anything is ACTED on or logged
  *   - the comparison is timing-safe
  *   - an unsigned or wrongly-signed call is rejected outright
  *   - no card data is ever accepted, stored or logged
  */
 
 export type SkipCashConfig = {
-  /** https://skipcashtest.azurewebsites.net for sandbox. */
+  /**
+   * Sandbox:    https://skipcashtest.azurewebsites.net
+   * Production: https://api.skipcash.app
+   */
   apiUrl: string;
+  /**
+   * Merchant client id.
+   *
+   * NOTE: not actually sent on the checkout call — SkipCash authenticates that
+   * with the HMAC alone. It is kept in the config because the merchant portal
+   * issues it alongside the others and a future endpoint may want it; dropping
+   * it from the required set would just mean rediscovering it later.
+   */
   clientId: string;
   keyId: string;
-  /** Signs outbound requests. */
+  /** Signs outbound payment-creation requests. */
   secretKey: string;
-  /** Verifies inbound webhooks. */
+  /**
+   * Verifies inbound webhooks. A SEPARATE value from `secretKey` — the docs
+   * are explicit: "use the webhook key (find in merchant portal account) to
+   * encrypt the received data". Signing webhooks with the payment secret is
+   * the obvious wrong guess and fails closed, so it presents as "every webhook
+   * is a forgery".
+   */
   webhookSecret: string;
 };
 
@@ -59,38 +89,62 @@ type SkipCashPayResponse = {
 };
 
 /**
- * SkipCash numeric status ids.
- * ADJUST-ON-SANDBOX: confirm against the current docs; the mapping matters more
- * than the numbers, so anything unrecognised deliberately becomes "unknown"
- * rather than being optimistically read as paid.
+ * SkipCash `statusId`, verbatim from https://dev.skipcash.app/doc/web-hooks/:
+ *
+ *    0  new                              7  pending refund
+ *    1  pending                          8  refund failed
+ *    2  paid                            12  customer started payment process
+ *    3  canceled
+ *    4  failed
+ *    5  rejected
+ *    6  refunded
+ *
+ * Note 3 and 4: an earlier version of this file had them the other way round.
+ * They map to different things downstream — a cancelled payment leaves the hold
+ * alone so the customer can retry, which is also true of a failure, but the two
+ * are reported differently to the office.
+ *
+ * 7 and 8 are refund LIFECYCLE, not payment outcomes: a refund being in flight
+ * or having failed does not change the fact that the money arrived, so both stay
+ * `paid` rather than pretending the booking is unpaid. Only 6, a completed
+ * refund, moves it.
+ *
+ * 12 is "customer opened the hosted page". It is `pending`, and it is worth
+ * knowing that it exists: it is a state the payment genuinely reaches, and
+ * mapping it to `unknown` would have made a normal event look like a fault.
+ *
+ * Anything unrecognised is `unknown`, never optimistically `paid`.
  */
+const STATUS_BY_ID: Record<string, PaymentStatus> = {
+  "0": "pending", // new
+  "1": "pending", // pending
+  "2": "paid", // paid
+  "3": "cancelled", // canceled
+  "4": "failed", // failed
+  "5": "failed", // rejected
+  "6": "refunded", // refunded
+  "7": "paid", // pending refund — the money still arrived
+  "8": "paid", // refund failed — likewise
+  "12": "pending", // customer started payment process
+};
+
+/** The same states by name, for a payload that sends words instead of ids. */
+const STATUS_BY_NAME: Record<string, PaymentStatus> = {
+  new: "pending",
+  pending: "pending",
+  paid: "paid",
+  canceled: "cancelled",
+  cancelled: "cancelled",
+  failed: "failed",
+  rejected: "failed",
+  refunded: "refunded",
+};
+
 function mapStatus(raw: unknown): PaymentStatus {
-  const value = String(raw ?? "").toLowerCase();
-  switch (value) {
-    case "2":
-    case "paid":
-    case "success":
-    case "succeeded":
-      return "paid";
-    case "1":
-    case "new":
-    case "pending":
-    case "inprogress":
-      return "pending";
-    case "3":
-    case "failed":
-    case "rejected":
-      return "failed";
-    case "4":
-    case "cancelled":
-    case "canceled":
-      return "cancelled";
-    case "5":
-    case "refunded":
-      return "refunded";
-    default:
-      return "unknown";
-  }
+  const value = String(raw ?? "")
+    .trim()
+    .toLowerCase();
+  return STATUS_BY_ID[value] ?? STATUS_BY_NAME[value] ?? "unknown";
 }
 
 /** Minor units → the decimal string SkipCash expects ("5450.00"). */
@@ -112,17 +166,24 @@ export class SkipCashProvider implements PaymentProvider {
   constructor(private readonly config: SkipCashConfig) {}
 
   /**
-   * SkipCash signs the request with an HMAC over a canonical, ORDER-SENSITIVE
-   * list of the fields being sent.
+   * SkipCash authenticates a request with an HMAC-SHA256, base64, over a
+   * canonical `Key=Value,Key=Value` string built from an ORDER-SENSITIVE and
+   * CASE-SENSITIVE field list.
    *
-   * ADJUST-ON-SANDBOX: the field order is the part most likely to differ. A
-   * wrong order produces a generic auth failure, which is why
-   * `pnpm payments:probe` prints the exact string it signed.
+   * It is a literal string, so `Country=QA` and `country=QA` are different
+   * messages and produce different hashes. That is not a detail — it is the
+   * single easiest way to get an unexplained 401 out of this API.
+   *
+   * `pnpm payments:probe checkout` prints the exact string it signed, which is
+   * the only useful thing to compare against the docs when auth fails.
    */
-  private sign(fields: Array<[string, string]>): string {
-    const canonical = fields.map(([k, v]) => `${k}=${v}`).join(",");
-    return createHmac("sha256", this.config.secretKey)
-      .update(canonical, "utf8")
+  private static canonical(fields: Array<[string, string]>): string {
+    return fields.map(([key, value]) => `${key}=${value}`).join(",");
+  }
+
+  private sign(fields: Array<[string, string]>, secret: string): string {
+    return createHmac("sha256", secret)
+      .update(SkipCashProvider.canonical(fields), "utf8")
       .digest("base64");
   }
 
@@ -132,8 +193,22 @@ export class SkipCashProvider implements PaymentProvider {
     const firstName = parts[0] ?? "Customer";
     const lastName = parts.slice(1).join(" ") || firstName;
 
-    // Order matters for the signature; the body is built from the same list so
-    // the two can never disagree.
+    /**
+     * The signed field list, in SkipCash's documented order and casing.
+     * Anything added here changes the hash, so it must match the API's own
+     * canonical list exactly — this is not a place to add a field "since we
+     * are sending it anyway". Unsigned extras go on the body below.
+     *
+     * `Uid` is a UUID in SkipCash's sample. `bookings.id` is a Postgres uuid,
+     * so passing it straight through is both correct and useful: it makes the
+     * gateway's own record searchable by our primary key.
+     *
+     * Address fields are sent EMPTY except Country. SkipCash requires them only
+     * for US/UK/Canada cards, and this is a Qatari villa service — collecting a
+     * postal code we have no use for, to satisfy a validation that does not
+     * apply, is a field on the form for nothing. They stay in the list because
+     * the canonical string includes them either way.
+     */
     const fields: Array<[string, string]> = [
       ["Uid", input.bookingId],
       ["KeyId", this.config.keyId],
@@ -142,11 +217,11 @@ export class SkipCashProvider implements PaymentProvider {
       ["LastName", lastName],
       ["Phone", input.customer.phone],
       ["Email", input.customer.email ?? ""],
-      ["street", ""],
-      ["city", ""],
-      ["state", ""],
-      ["country", "QA"],
-      ["postalCode", ""],
+      ["Street", ""],
+      ["City", ""],
+      ["State", ""],
+      ["Country", "QA"],
+      ["PostalCode", ""],
       ["TransactionId", input.reference],
       ["Custom1", input.reference],
     ];
@@ -159,13 +234,25 @@ export class SkipCashProvider implements PaymentProvider {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: this.config.clientId,
-          Signature: this.sign(fields),
+          /**
+           * The hash IS the Authorization header. There is no separate
+           * `Signature` header and the client id is not sent here — an earlier
+           * version of this file did both, which is a 401 on every call.
+           */
+          Authorization: this.sign(fields, this.config.secretKey),
         },
         body: JSON.stringify({
           ...body,
-          // The provider redirects here when the customer is done. It is NOT
-          // what confirms the booking — the webhook is.
+          /**
+           * Unsigned extras. SkipCash builds its comparison hash from its own
+           * fixed field list, not from whatever the body happens to contain —
+           * which is why the docs can say Custom2-10 go "only in the POST
+           * payload". So these are safe to add and must NOT be signed.
+           *
+           * ReturnUrl is where the customer lands afterwards. It is NOT what
+           * confirms the booking — the webhook is, and the success page polls.
+           * A return URL is trivially forgeable.
+           */
           ReturnUrl: input.returnUrl,
           Lang: input.locale === "ar" ? "ar" : "en",
         }),
@@ -199,64 +286,131 @@ export class SkipCashProvider implements PaymentProvider {
   }
 
   /**
-   * Verifies the webhook signature BEFORE the body is parsed.
+   * Verifies an inbound webhook.
    *
-   * The HMAC is computed over the raw bytes, so the body must not be
-   * round-tripped through JSON first. An unsigned call is rejected: treating a
-   * missing signature as acceptable would mean anyone who knows a transaction id
-   * can confirm a booking for free.
+   * THE ORDER HERE IS NOT "VERIFY BEFORE PARSE", AND THAT IS FORCED, NOT A
+   * RELAXATION. CLAUDE.md §4f states the rule as "read raw text → verify
+   * signature → only then settle", which is right for a provider that hashes
+   * the raw bytes (our mock does). SkipCash does not: it hashes a canonical
+   * `PaymentId=..,Amount=..,StatusId=..` string assembled from named fields,
+   * exactly like the outbound request. Those fields cannot be read without
+   * parsing, so the sequence is necessarily parse → verify → act.
+   *
+   * What the original rule was actually protecting is preserved in full:
+   *
+   *   - Nothing is ACTED on before verification. The parse produces values in
+   *     memory and nothing else; no database write, no status change, no
+   *     notification.
+   *   - Nothing is LOGGED before verification — or after it. The body is
+   *     attacker-controlled and could carry card-shaped data planted purely to
+   *     get it written into our logs. `redactSensitive` runs on the way to
+   *     storage, and no branch here prints the body.
+   *   - `JSON.parse` on a string is not itself a dangerous operation. The
+   *     danger was ever only in trusting the result, which nothing does until
+   *     the hash matches.
+   *
+   * A missing signature is rejected outright: treating it as acceptable would
+   * let anyone who can guess a payment id confirm a booking for free.
    */
   async verifyWebhook(input: {
     rawBody: string;
     headers: Headers;
   }): Promise<WebhookVerification> {
+    // SkipCash sends the hash in Authorization. The alternatives are tolerated
+    // because a gateway moving it to a conventional header is a likelier
+    // future than a gateway inventing a new scheme.
     const provided =
+      input.headers.get("authorization") ??
       input.headers.get("signature") ??
-      input.headers.get("x-signature") ??
-      input.headers.get("authorization");
+      input.headers.get("x-signature");
 
     if (!provided) return { valid: false, reason: "missing_signature" };
 
-    const expected = createHmac("sha256", this.config.webhookSecret)
-      .update(input.rawBody, "utf8")
-      .digest("base64");
+    let body: Record<string, unknown>;
+    try {
+      const parsed = JSON.parse(input.rawBody) as Record<string, unknown>;
+      // Tolerated in case the callback is ever wrapped the way the REST
+      // responses are; the documented webhook body is flat.
+      body = (parsed.resultObj ?? parsed) as Record<string, unknown>;
+    } catch {
+      return { valid: false, reason: "malformed_body" };
+    }
 
+    /**
+     * The canonical string, per https://dev.skipcash.app/doc/web-hooks/:
+     *
+     *     PaymentId, Amount, StatusId, TransactionId, Custom1, VisaId
+     *
+     * with the documented caveat — "TransactionId and Custom1 are optional,
+     * include them if you're using them" — so a field absent from the payload
+     * is absent from the string, and the ORDER of the rest is unchanged. The
+     * loop below is exactly that: present means included, missing means
+     * skipped. Emitting an empty `TransactionId=` for a field SkipCash never
+     * sent would produce a different hash and reject every genuine webhook.
+     *
+     * We always send TransactionId and Custom1 on checkout (both carry the
+     * booking reference), so in practice all six are expected back — but the
+     * rule is implemented rather than assumed, because "in practice" is doing
+     * a lot of work in that sentence and the failure mode is total.
+     */
+    const ORDER = [
+      "PaymentId",
+      "Amount",
+      "StatusId",
+      "TransactionId",
+      "Custom1",
+      "VisaId",
+    ] as const;
+
+    const fields: Array<[string, string]> = [];
+    for (const key of ORDER) {
+      const value = body[key];
+      if (value === undefined || value === null) continue;
+      fields.push([key, String(value)]);
+    }
+
+    if (fields.length === 0) {
+      return { valid: false, reason: "no_signable_fields" };
+    }
+
+    const expected = this.sign(fields, this.config.webhookSecret);
+
+    // Timing-safe, and length-checked first because timingSafeEqual throws on
+    // a length mismatch rather than returning false.
     const a = Buffer.from(provided.replace(/^Bearer\s+/i, "").trim());
     const b = Buffer.from(expected);
     if (a.length !== b.length || !timingSafeEqual(a, b)) {
       return { valid: false, reason: "bad_signature" };
     }
 
-    // Only now is it safe to look at the content.
-    let body: SkipCashPayResponse["resultObj"] & Record<string, unknown>;
-    try {
-      const parsedBody = JSON.parse(input.rawBody) as Record<string, unknown>;
-      body = (parsedBody.resultObj ?? parsedBody) as typeof body;
-    } catch {
-      return { valid: false, reason: "malformed_body" };
-    }
+    // --- Verified. Only now is any of this trustworthy. ---------------------
 
-    // ADJUST-ON-SANDBOX: field names on the callback body.
-    const providerRef = String(body.id ?? body.paymentId ?? "");
-    const statusRaw = body.statusId ?? body.status;
+    const providerRef = String(body.PaymentId ?? "");
     if (!providerRef) return { valid: false, reason: "missing_payment_id" };
 
-    const status = mapStatus(statusRaw);
+    const status = mapStatus(body.StatusId);
 
     return {
       valid: true,
       event: {
-        // SkipCash sends no separate event id, so the idempotency key is the
-        // payment plus its status. A retry of the same state collapses; a real
-        // transition (pending → paid) is still processed.
+        /**
+         * SkipCash sends no event id, so the idempotency key is the payment
+         * plus its resolved status. A redelivery of the same state collapses
+         * onto the UNIQUE (provider, event_id) constraint; a genuine
+         * transition (pending → paid) is a different key and is processed.
+         *
+         * Deliberately keyed on the MAPPED status, not the raw id: 7 and 8
+         * both mean "still paid", and settling the same payment twice because
+         * a refund attempt failed is not a transition anyone wants.
+         */
         eventId: `${providerRef}:${status}`,
         providerRef,
         status,
         amount:
-          body.amount !== undefined
-            ? fromDecimalString(body.amount as string | number)
+          body.Amount !== undefined
+            ? fromDecimalString(body.Amount as string | number)
             : undefined,
-        currency: typeof body.currency === "string" ? body.currency : undefined,
+        currency: typeof body.Currency === "string" ? body.Currency : undefined,
         raw: redactSensitive(body),
       },
     };
