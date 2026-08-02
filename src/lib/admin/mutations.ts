@@ -7,6 +7,7 @@ import {
   ADMIN_TRANSITIONS,
   ALLOWED_TRANSITIONS,
   type BookingStatus,
+  type FooterContent,
 } from "./types";
 
 export { ADMIN_TRANSITIONS, ALLOWED_TRANSITIONS } from "./types";
@@ -316,6 +317,7 @@ export type SettingsPatch = {
   adminNotificationEmails?: string[];
   termsEn?: string;
   termsAr?: string;
+  footer?: FooterContent;
 };
 
 /**
@@ -327,7 +329,12 @@ export type SettingsPatch = {
  * handed straight to a `::jsonb` cast gets encoded twice and lands as a jsonb
  * STRING, after which `->>` returns NULL for every key.
  */
-const JSONB_SETTINGS_COLUMNS = new Set<keyof SettingsPatch>(["serviceAreas"]);
+// `footer` is here for the reason the comment above gives: without it the
+// object is encoded twice and every `->>` on it returns NULL.
+const JSONB_SETTINGS_COLUMNS = new Set<keyof SettingsPatch>([
+  "serviceAreas",
+  "footer",
+]);
 
 const SETTINGS_COLUMNS: Record<keyof SettingsPatch, string> = {
   priceRental: "price_rental",
@@ -341,6 +348,7 @@ const SETTINGS_COLUMNS: Record<keyof SettingsPatch, string> = {
   adminNotificationEmails: "admin_notification_emails",
   termsEn: "terms_en",
   termsAr: "terms_ar",
+  footer: "footer",
 };
 
 /**

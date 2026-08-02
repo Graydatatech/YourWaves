@@ -395,6 +395,16 @@ export const settings = pgTable("settings", {
   /** Empty Arabic falls back to the English text rather than showing nothing. */
   termsAr: text("terms_ar").notNull().default(""),
 
+  /**
+   * Footer content overrides (migration 0015). Any key absent or empty falls
+   * back to messages/*.json, so an untouched deployment renders the designed
+   * footer and clearing a field restores the default rather than blanking it.
+   */
+  footer: jsonb("footer")
+    .$type<Record<string, string>>()
+    .notNull()
+    .default({}),
+
   updatedAt: timestamp("updated_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

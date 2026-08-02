@@ -807,7 +807,20 @@
       "termsHint": "Shown at /terms and linked from the booking form. Plain text — leave a blank line between paragraphs. Clearing the English text removes the agreement tick from the booking form.",
       "termsEn": "English",
       "termsAr": "Arabic",
-      "termsArHint": "Optional. Left empty, Arabic customers see the English text."
+      "termsArHint": "Optional. Left empty, Arabic customers see the English text.",
+      "footer": "Website footer",
+      "footerHint": "Leave a box empty to use the designed default. Clearing a field restores it rather than blanking the line.",
+      "footerDefault": "Using the default",
+      "footerTaglineEn": "Tagline (English)",
+      "footerTaglineAr": "Tagline (Arabic)",
+      "footerEmail": "Contact email",
+      "footerPhone": "Contact phone",
+      "footerCitiesEn": "Where we deliver (English)",
+      "footerCitiesAr": "Where we deliver (Arabic)",
+      "footerSocialHint": "Social links. Empty hides that link entirely — a button going nowhere is worse than no button. A bare domain gets https:// added.",
+      "footerInstagram": "Instagram",
+      "footerWhatsapp": "WhatsApp",
+      "footerYoutube": "YouTube"
     },
     "admins": {
       "title": "Back-office access",

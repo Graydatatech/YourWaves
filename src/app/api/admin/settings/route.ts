@@ -41,6 +41,29 @@ const patchSchema = z.object({
    */
   termsEn: z.string().max(20_000).optional(),
   termsAr: z.string().max(20_000).optional(),
+
+  /**
+   * Footer overrides. Every field optional and every one allowed to be empty —
+   * an empty string is how an admin RESTORES the designed default, so it must
+   * not be rejected as invalid.
+   *
+   * The social fields are URLs, but `.url()` would reject an empty string, so
+   * they are validated as "empty, or a URL" instead. A bare domain typed
+   * without a scheme is normalised client-side rather than refused here.
+   */
+  footer: z
+    .object({
+      taglineEn: z.string().max(400).optional(),
+      taglineAr: z.string().max(400).optional(),
+      email: z.string().max(160).optional(),
+      phone: z.string().max(40).optional(),
+      citiesEn: z.string().max(200).optional(),
+      citiesAr: z.string().max(200).optional(),
+      instagram: z.string().max(300).optional(),
+      whatsapp: z.string().max(300).optional(),
+      youtube: z.string().max(300).optional(),
+    })
+    .optional(),
 });
 
 export async function GET() {

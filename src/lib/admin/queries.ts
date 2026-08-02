@@ -632,6 +632,7 @@ export async function getAdminSettings(
         service_areas: unknown;
         terms_en: string | null;
         terms_ar: string | null;
+        footer: Record<string, string> | null;
         updated_at: string;
       }[]
     >`SELECT * FROM settings WHERE id = 1`;
@@ -654,6 +655,7 @@ export async function getAdminSettings(
       // the settings screen renders empty boxes instead of throwing.
       termsEn: row.terms_en ?? "",
       termsAr: row.terms_ar ?? "",
+      footer: row.footer ?? {},
       updatedAt: new Date(row.updated_at).toISOString(),
     };
   });

@@ -13,6 +13,27 @@
 
 import type { ServiceArea } from "@/lib/booking/serviceArea";
 
+/**
+ * Editable footer copy. Every field is optional: an empty string means "use the
+ * designed default from messages/*.json", which is what makes clearing a box in
+ * the back office restore the default rather than blank the page.
+ *
+ * Email, phone and the social URLs are locale-independent; the tagline and the
+ * delivery-area line are not, so they exist per language.
+ */
+export type FooterContent = {
+  taglineEn?: string;
+  taglineAr?: string;
+  email?: string;
+  phone?: string;
+  citiesEn?: string;
+  citiesAr?: string;
+  /** Absent or empty hides that social link entirely rather than linking nowhere. */
+  instagram?: string;
+  whatsapp?: string;
+  youtube?: string;
+};
+
 export type BookingStatus =
   | "holding"
   | "pending"
@@ -175,5 +196,6 @@ export type AdminSettings = {
   /** Terms & conditions, plain text. Empty English hides the agreement tick. */
   termsEn: string;
   termsAr: string;
+  footer: FooterContent;
   updatedAt: string;
 };

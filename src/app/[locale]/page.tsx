@@ -15,6 +15,21 @@ import {
   SiteHeader,
 } from "@/components/marketing";
 
+/**
+ * ISR, not fully static, and this is the cost of an editable footer.
+ *
+ * SiteFooter reads the settings row. A database read is not one of Next's
+ * dynamic APIs, so without this the query would run at BUILD time and the
+ * result would be baked in — an admin editing the footer would see nothing
+ * change until the next deploy, which is not what an editable field means.
+ *
+ * 300s keeps the page cached and fast (phase 10's whole point) while making a
+ * footer edit appear within five minutes. Do not swap this for
+ * `force-dynamic`: that would put a database round trip in front of every
+ * visitor on the 4G budget, to keep a line of copy fresh to the second.
+ */
+export const revalidate = 300;
+
 export async function generateMetadata({
   params,
 }: {

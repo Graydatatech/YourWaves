@@ -52,6 +52,19 @@ export function SettingsForm({
     adminNotificationEmails: settings.adminNotificationEmails.join("\n"),
     termsEn: settings.termsEn,
     termsAr: settings.termsAr,
+    // Footer overrides. Empty means "use the designed default", which is why
+    // every one of these seeds from `?? ""` rather than from the rendered copy:
+    // showing the default IN the box would turn "leave it alone" into "pin it
+    // to today's wording".
+    footerTaglineEn: settings.footer.taglineEn ?? "",
+    footerTaglineAr: settings.footer.taglineAr ?? "",
+    footerEmail: settings.footer.email ?? "",
+    footerPhone: settings.footer.phone ?? "",
+    footerCitiesEn: settings.footer.citiesEn ?? "",
+    footerCitiesAr: settings.footer.citiesAr ?? "",
+    footerInstagram: settings.footer.instagram ?? "",
+    footerWhatsapp: settings.footer.whatsapp ?? "",
+    footerYoutube: settings.footer.youtube ?? "",
   });
 
   /**
@@ -105,6 +118,17 @@ export function SettingsForm({
         // silently reflow somebody's terms into one block.
         termsEn: form.termsEn,
         termsAr: form.termsAr,
+        footer: {
+          taglineEn: form.footerTaglineEn,
+          taglineAr: form.footerTaglineAr,
+          email: form.footerEmail,
+          phone: form.footerPhone,
+          citiesEn: form.footerCitiesEn,
+          citiesAr: form.footerCitiesAr,
+          instagram: form.footerInstagram,
+          whatsapp: form.footerWhatsapp,
+          youtube: form.footerYoutube,
+        },
       }),
     });
 
@@ -313,6 +337,109 @@ export function SettingsForm({
             {...field("adminNotificationEmails")}
           />
         </Labelled>
+      </section>
+
+      {/* Footer ------------------------------------------------------------
+          Every box is optional. Empty means the designed copy from
+          messages/*.json is used, so clearing a field RESTORES the default
+          rather than blanking the line — which is what the placeholder text on
+          each input says. */}
+      <section className="border-border bg-surface rounded-card border p-4">
+        <h2 className="text-ink-deep text-sm font-bold">
+          {t("settings.footer")}
+        </h2>
+        <p className="text-muted-2 pt-1 text-sm">{t("settings.footerHint")}</p>
+
+        <div className="mt-3 flex flex-col gap-3">
+          <Labelled label={t("settings.footerTaglineEn")}>
+            <textarea
+              rows={2}
+              dir="ltr"
+              className={cn(FIELD, "py-2")}
+              placeholder={t("settings.footerDefault")}
+              {...field("footerTaglineEn")}
+            />
+          </Labelled>
+          <Labelled label={t("settings.footerTaglineAr")}>
+            <textarea
+              rows={2}
+              dir="rtl"
+              className={cn(FIELD, "py-2")}
+              placeholder={t("settings.footerDefault")}
+              {...field("footerTaglineAr")}
+            />
+          </Labelled>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Labelled label={t("settings.footerEmail")}>
+              <input
+                type="email"
+                dir="ltr"
+                className={FIELD}
+                placeholder={t("settings.footerDefault")}
+                {...field("footerEmail")}
+              />
+            </Labelled>
+            <Labelled label={t("settings.footerPhone")}>
+              <input
+                type="tel"
+                dir="ltr"
+                className={FIELD}
+                placeholder={t("settings.footerDefault")}
+                {...field("footerPhone")}
+              />
+            </Labelled>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Labelled label={t("settings.footerCitiesEn")}>
+              <input
+                dir="ltr"
+                className={FIELD}
+                placeholder={t("settings.footerDefault")}
+                {...field("footerCitiesEn")}
+              />
+            </Labelled>
+            <Labelled label={t("settings.footerCitiesAr")}>
+              <input
+                dir="rtl"
+                className={FIELD}
+                placeholder={t("settings.footerDefault")}
+                {...field("footerCitiesAr")}
+              />
+            </Labelled>
+          </div>
+
+          <p className="text-muted-2 pt-1 text-sm">
+            {t("settings.footerSocialHint")}
+          </p>
+          <div className="grid gap-3 sm:grid-cols-3">
+            <Labelled label={t("settings.footerInstagram")}>
+              <input
+                dir="ltr"
+                className={FIELD}
+                placeholder="instagram.com/yourwaves"
+                {...field("footerInstagram")}
+              />
+            </Labelled>
+            <Labelled label={t("settings.footerWhatsapp")}>
+              <input
+                dir="ltr"
+                className={FIELD}
+                placeholder="wa.me/97455123456"
+                {...field("footerWhatsapp")}
+              />
+            </Labelled>
+            <Labelled label={t("settings.footerYoutube")}>
+              <input
+                dir="ltr"
+                className={FIELD}
+                placeholder="youtube.com/@yourwaves"
+                {...field("footerYoutube")}
+              />
+            </Labelled>
+          </div>
+        </div>
       </section>
 
       {/* Terms & conditions ---------------------------------------------- */}
