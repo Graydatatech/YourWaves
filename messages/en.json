@@ -800,6 +800,34 @@
       "areaAr": "Arabic name",
       "areaAdd": "Add an area",
       "areaRemove": "Remove this area"
+    },
+    "admins": {
+      "title": "Back-office access",
+      "subtitle": "Everyone who can sign in to this dashboard. Adding someone here gives them the same access you have.",
+      "you": "(you)",
+      "lastSignIn": "Last signed in {when}",
+      "neverSignedIn": "Has not signed in yet",
+      "mfaOn": "2FA set up",
+      "mfaPending": "2FA not set up",
+      "revoke": "Remove",
+      "revokeTitle": "Remove back-office access?",
+      "revokeBody": "{email} will lose access immediately, on their next action. Their account and two-factor setup are kept, so access can be granted again later.",
+      "addLabel": "Add an admin",
+      "add": "Add",
+      "addHint": "A password is generated and shown once. Send it to them yourself — we cannot show it again.",
+      "createdTitle": "Account created — copy the password now",
+      "emailLabel": "Email",
+      "passwordLabel": "Password",
+      "createdHint": "Shown once and never again. They will be asked to set up a two-factor authenticator the first time they sign in.",
+      "dismiss": "Done, I have copied it",
+      "errors": {
+        "already_admin": "That email already has back-office access.",
+        "invalid_email": "That does not look like an email address.",
+        "cannot_revoke_self": "You cannot remove your own access.",
+        "last_admin": "This is the only admin. Add another before removing this one.",
+        "not_found": "That account no longer exists.",
+        "failed": "Something went wrong. Please try again."
+      }
     }
   },
   "jobSheet": {

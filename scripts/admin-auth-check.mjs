@@ -60,6 +60,8 @@ const API_GETS = [
   // Returns no secret even to an authorised caller, but an unauthenticated one
   // must not learn which gateway is live or whether it is configured.
   "/api/admin/payments",
+  // The admin roster. An unauthenticated caller must not learn who has access.
+  "/api/admin/admins",
 ];
 
 const API_WRITES = [
@@ -102,6 +104,13 @@ const API_WRITES = [
    * first rather than the confirmation happening to stop it.
    */
   ["POST", "/api/admin/payments/test", { confirm: true }],
+  /**
+   * Creating a back-office account is the highest-privilege write in the
+   * project: it grants the same access the caller has. If this ever answered
+   * anything but a refusal, anyone could grant themselves the dashboard.
+   */
+  ["POST", "/api/admin/admins", { email: "intruder@example.com" }],
+  ["DELETE", "/api/admin/admins/00000000-0000-4000-8000-000000000000", null],
 ];
 
 console.log(`\nAdmin authorisation — unauthenticated caller\nbase ${BASE}\n`);

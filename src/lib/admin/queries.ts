@@ -7,6 +7,7 @@ import { toServiceAreas } from "@/lib/booking/serviceArea";
 import {
   OPERATIONAL_STATUSES,
   type AdminSettings,
+  type AdminUserRow,
   type BookingNoteRow,
   type BookingStatus,
   type BookingSummary,
@@ -561,6 +562,56 @@ export async function getDrivers(session: AdminSession): Promise<DriverRow[]> {
       totalJobs: row.total_jobs,
     }));
   });
+}
+
+/**
+ * Everyone with back-office access.
+ *
+ * Reads through `sql` rather than `asUser`, deliberately. `user_roles` is
+ * governed by policies that let a caller see their OWN row and no more — which
+ * is right for the authorisation lookups on the hot path, and useless for a
+ * screen whose entire purpose is listing the other admins. The route calling
+ * this is behind `requireAdmin()`, so the authorisation question is already
+ * answered one layer up; RLS is not the check being relied on here.
+ *
+ * `auth.users` and `auth.mfa_factors` have no policies for `authenticated` at
+ * all, so an RLS-scoped read could not join them regardless.
+ */
+export async function getAdminUsers(
+  session: AdminSession,
+): Promise<AdminUserRow[]> {
+  const rows = await sql<
+    {
+      user_id: string;
+      email: string;
+      last_sign_in_at: string | null;
+      mfa_enrolled: boolean;
+      granted_at: string;
+    }[]
+  >`
+    SELECT r.user_id,
+           COALESCE(u.email, r.email, '')            AS email,
+           u.last_sign_in_at,
+           EXISTS (
+             SELECT 1 FROM auth.mfa_factors f
+              WHERE f.user_id = r.user_id
+                AND f.status = 'verified'
+           )                                          AS mfa_enrolled,
+           r.created_at                               AS granted_at
+      FROM user_roles r
+      LEFT JOIN auth.users u ON u.id = r.user_id
+     WHERE r.role = 'admin'
+     ORDER BY r.created_at
+  `;
+
+  return rows.map((row) => ({
+    userId: row.user_id,
+    email: row.email,
+    lastSignInAt: row.last_sign_in_at,
+    mfaEnrolled: row.mfa_enrolled,
+    isSelf: row.user_id === session.userId,
+    grantedAt: row.granted_at,
+  }));
 }
 
 export async function getAdminSettings(

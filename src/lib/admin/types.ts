@@ -137,6 +137,29 @@ export type BookingNoteRow = {
   createdAt: string;
 };
 
+/**
+ * A back-office account.
+ *
+ * Identity (auth.users) and authorisation (user_roles) are separate — §4h — so
+ * this joins the two: the row exists because somebody granted the role, and the
+ * sign-in details come from the auth schema.
+ */
+export type AdminUserRow = {
+  userId: string;
+  email: string;
+  /** null until they have signed in once. */
+  lastSignInAt: string | null;
+  /**
+   * Whether a TOTP factor has been VERIFIED. An admin who has been created but
+   * has not enrolled yet is treated as signed out by getAdminSession, so this
+   * is the difference between "invited" and "using it".
+   */
+  mfaEnrolled: boolean;
+  /** True for the person looking at the screen — they cannot revoke themselves. */
+  isSelf: boolean;
+  grantedAt: string;
+};
+
 export type AdminSettings = {
   priceRental: number;
   priceSetup: number;

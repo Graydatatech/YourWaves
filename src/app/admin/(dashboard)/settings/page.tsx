@@ -1,6 +1,7 @@
 import { getAdminSession } from "@/lib/admin/session";
 import {
   getAdminSettings,
+  getAdminUsers,
   getDrivers,
   getSettingsAudit,
 } from "@/lib/admin/queries";
@@ -8,6 +9,7 @@ import { adminT } from "@/lib/admin/intl";
 import { readPaymentsStatus } from "@/lib/payments/status";
 import { SettingsForm } from "./SettingsForm";
 import { PaymentsPanel } from "./PaymentsPanel";
+import { AdminsPanel } from "./AdminsPanel";
 
 export const dynamic = "force-dynamic";
 
@@ -17,10 +19,11 @@ export default async function AdminSettingsPage() {
   if (!result.ok) return null;
 
   const t = adminT();
-  const [settings, drivers, audit] = await Promise.all([
+  const [settings, drivers, audit, admins] = await Promise.all([
     getAdminSettings(result.session),
     getDrivers(result.session),
     getSettingsAudit(result.session),
+    getAdminUsers(result.session),
   ]);
 
   return (
@@ -40,6 +43,11 @@ export default async function AdminSettingsPage() {
        * hints, which is all it can ever render.
        */}
       <PaymentsPanel status={readPaymentsStatus()} />
+
+      {/* Back-office accounts. Replaces scripts/create-admin.mjs for everything
+          except bootstrapping the very first admin, which has no session to
+          authenticate and therefore still needs the CLI. */}
+      <AdminsPanel admins={admins} />
 
       <section className="border-border bg-surface rounded-card border p-4">
         <h2 className="text-ink-deep text-sm font-bold">
