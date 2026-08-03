@@ -4,6 +4,7 @@ import { sql } from "@/db/client";
 import { startCheckout, type CheckoutRefusal } from "@/lib/payments/service";
 import { OTP_COOKIE_NAME, verifyOtpToken } from "@/lib/otp/token";
 import { BOOKING_FORM } from "@/lib/booking/formConfig";
+import { verificationSubject } from "@/lib/otp";
 
 const NO_STORE = { "Cache-Control": "no-store" } as const;
 const paramsSchema = z.object({ id: z.string().uuid() });
@@ -50,8 +51,11 @@ export async function POST(
   const body = bodySchema.safeParse(await request.json().catch(() => ({})));
   const locale = body.success ? body.data.locale : "ar";
 
-  const owner = await sql<{ customer_phone: string }[]>`
-    SELECT customer_phone FROM bookings WHERE id = ${resolved.data.id}::uuid
+  const owner = await sql<
+    { customer_phone: string; customer_email: string | null }[]
+  >`
+    SELECT customer_phone, customer_email
+      FROM bookings WHERE id = ${resolved.data.id}::uuid
   `;
   const phone = owner[0]?.customer_phone;
 
@@ -99,7 +103,12 @@ export async function POST(
       );
     }
 
-    if (!verifyOtpToken(token, phone).valid) {
+    // The contact the active channel verifies, not the phone unconditionally.
+    const subject = verificationSubject({
+      phone,
+      email: owner[0]?.customer_email,
+    });
+    if (!subject || !verifyOtpToken(token, subject).valid) {
       // Same answer for "no such booking" and "not yours", so an id cannot be
       // used to probe which bookings exist. NOT_FOUND rather than
       // PHONE_NOT_VERIFIED for the same reason: a token that fails to verify

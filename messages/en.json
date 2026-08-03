@@ -251,7 +251,9 @@
       "changeNumber": "Use a different number",
       "phoneHintNoVerify": "We will confirm on WhatsApp.",
       "termsAgree": "I agree to the <link>terms and conditions</link>",
-      "termsError": "Please agree to the terms and conditions to continue."
+      "termsError": "Please agree to the terms and conditions to continue.",
+      "changeEmail": "Use a different email",
+      "verifyHeadingEmail": "Verify your email"
     },
     "summary": {
       "title": "Your booking",
@@ -306,7 +308,13 @@
       "rateLimited": "Too many requests. Please wait before trying again.",
       "deliveryFailed": "We could not send the code. Please try again.",
       "network": "No connection. Check your signal and try again.",
-      "invalidPhone": "That number does not look right."
+      "invalidPhone": "That number does not look right.",
+      "introEmail": "We will send a 4-digit code to this email address.",
+      "needValidEmail": "Enter a valid email address first.",
+      "enterCodeEmail": "Enter the 4-digit code we emailed you.",
+      "verifiedEmail": "Email address verified",
+      "invalidEmail": "That email address does not look right.",
+      "checkSpam": "No email? Check your spam folder before sending a new code."
     },
     "hold": {
       "heldTitle": "Your date is held",

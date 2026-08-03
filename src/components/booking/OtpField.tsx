@@ -9,12 +9,17 @@ const CODE_LENGTH = 4;
 const RESEND_COOLDOWN_SECONDS = 60;
 
 export type OtpFieldProps = {
-  /** E.164 number to verify, or null when the entered number is not valid yet. */
-  phone: string | null;
+  /**
+   * The contact being verified — an E.164 number or an email address depending
+   * on `target` — or null while what the customer has typed is not valid yet.
+   */
+  destination: string | null;
+  /** Which contact the active channel proves. Drives the copy, not the wiring. */
+  target: "phone" | "email";
   locale: "ar" | "en";
-  /** Already-verified number, if any. */
-  verifiedPhone?: string;
-  onVerified: (phone: string) => void;
+  /** The already-verified contact, if any. */
+  verifiedContact?: string;
+  onVerified: (destination: string) => void;
 };
 
 type Phase = "idle" | "sending" | "sent" | "verifying" | "verified" | "error";
@@ -29,12 +34,19 @@ type ErrorKey =
   | "invalidPhone";
 
 /**
- * WhatsApp OTP verification (SRS 3.5).
+ * One-time-code verification (SRS 3.5), over WhatsApp or email.
  *
- * Editing the phone number must discard any code in progress. That is handled
- * by the PARENT keying this component on the number, so a change remounts it
- * with fresh state — rather than an effect that resets six pieces of state and
- * has to be kept in step with them.
+ * The mechanism is identical either way — the server decides which channel is
+ * live and this component only posts a `destination` — so `target` changes
+ * WORDS and nothing else. Naming the wrong channel in the copy is the failure
+ * that matters here: "check WhatsApp" next to an email box sends the customer
+ * to an app that will never receive anything, and they abandon the form rather
+ * than report it.
+ *
+ * Editing the contact must discard any code in progress. That is handled by the
+ * PARENT keying this component on the value, so a change remounts it with fresh
+ * state — rather than an effect that resets six pieces of state and has to be
+ * kept in step with them.
  *
  * Four separate boxes, but only the FIRST carries
  * `autocomplete="one-time-code"`. iOS offers the code from the notification for
@@ -44,15 +56,40 @@ type ErrorKey =
  * makes the platform's choice of target ambiguous.
  */
 export function OtpField({
-  phone,
+  destination,
+  target,
   locale,
-  verifiedPhone,
+  verifiedContact,
   onVerified,
 }: OtpFieldProps) {
   const t = useTranslations("booking.otp");
   const groupId = useId();
 
-  const isVerified = phone !== null && phone === verifiedPhone;
+  /**
+   * Message keys per channel, as literals rather than a template string.
+   *
+   * next-intl types keys against the real catalogue, so `t(`intro${Suffix}`)`
+   * would not type-check — and that is the rule working: a channel cannot be
+   * added without its copy existing in both locales.
+   */
+  const copy =
+    target === "email"
+      ? ({
+          intro: "introEmail",
+          needContact: "needValidEmail",
+          enterCode: "enterCodeEmail",
+          verified: "verifiedEmail",
+          invalid: "invalidEmail",
+        } as const)
+      : ({
+          intro: "intro",
+          needContact: "needValidPhone",
+          enterCode: "enterCode",
+          verified: "verified",
+          invalid: "invalidPhone",
+        } as const);
+
+  const isVerified = destination !== null && destination === verifiedContact;
 
   const [phase, setPhase] = useState<Phase>(isVerified ? "verified" : "idle");
   const [error, setError] = useState<ErrorKey | null>(null);
@@ -81,20 +118,20 @@ export function OtpField({
 
   const submit = useCallback(
     async (code: string) => {
-      if (!phone) return;
+      if (!destination) return;
       setPhase("verifying");
       setError(null);
       try {
         const response = await fetch("/api/otp/verify", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ phone, code }),
+          body: JSON.stringify({ destination, code }),
         });
         const body = await response.json().catch(() => ({}));
 
         if (response.ok) {
           setPhase("verified");
-          onVerified(phone);
+          onVerified(destination);
           return;
         }
 
@@ -103,7 +140,11 @@ export function OtpField({
         if (body?.error === "too_many_attempts") setError("tooManyAttempts");
         else if (body?.error === "expired" || body?.error === "no_code")
           setError("expired");
-        else if (body?.error === "invalid_phone") setError("invalidPhone");
+        else if (
+          body?.error === "invalid_phone" ||
+          body?.error === "invalid_email"
+        )
+          setError("invalidPhone");
         else setError("wrongCode");
 
         setAttemptsLeft(
@@ -117,7 +158,7 @@ export function OtpField({
         setError("network");
       }
     },
-    [phone, onVerified],
+    [destination, onVerified],
   );
 
   /** Spreads a multi-character value across the boxes from `start`. */
@@ -140,7 +181,7 @@ export function OtpField({
   };
 
   async function requestCode() {
-    if (!phone || cooldown > 0) return;
+    if (!destination || cooldown > 0) return;
     setPhase("sending");
     setError(null);
     setDevCode(null);
@@ -148,7 +189,7 @@ export function OtpField({
       const response = await fetch("/api/otp/send", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone, locale }),
+        body: JSON.stringify({ destination, locale }),
       });
       const body = await response.json().catch(() => ({}));
 
@@ -170,7 +211,10 @@ export function OtpField({
         setCooldown(Number(body?.retry_after) || RESEND_COOLDOWN_SECONDS);
       } else if (response.status === 502) {
         setError("deliveryFailed");
-      } else if (body?.error === "invalid_phone") {
+      } else if (
+        body?.error === "invalid_phone" ||
+        body?.error === "invalid_email"
+      ) {
         setError("invalidPhone");
       } else {
         setError("deliveryFailed");
@@ -203,7 +247,7 @@ export function OtpField({
           />
         </svg>
         <span className="text-sm font-bold text-green-900">
-          {t("verified")}
+          {t(copy.verified)}
         </span>
       </div>
     );
@@ -216,11 +260,11 @@ export function OtpField({
     <div ref={containerRef} className="space-y-3">
       {!showBoxes && (
         <>
-          <p className="text-muted text-sm">{t("intro")}</p>
+          <p className="text-muted text-sm">{t(copy.intro)}</p>
           <button
             type="button"
             onClick={requestCode}
-            disabled={!phone || phase === "sending" || cooldown > 0}
+            disabled={!destination || phase === "sending" || cooldown > 0}
             className={cn(
               "bg-brand text-ink-deep shadow-cta inline-flex min-h-12 items-center",
               "rounded-pill justify-center px-6 text-[15px] font-bold",
@@ -231,15 +275,21 @@ export function OtpField({
             {phase === "sending" ? t("sending") : t("sendCode")}
           </button>
           {/* Never a silently dead button: say why it cannot be pressed. */}
-          {!phone && (
-            <p className="text-muted-2 text-sm">{t("needValidPhone")}</p>
+          {!destination && (
+            <p className="text-muted-2 text-sm">{t(copy.needContact)}</p>
           )}
         </>
       )}
 
       {showBoxes && (
         <>
-          <p className="text-muted text-sm">{t("enterCode")}</p>
+          <p className="text-muted text-sm">{t(copy.enterCode)}</p>
+          {/* Email lands in spam far more often than a WhatsApp message goes
+              missing, and "send a new code" costs a 60s cooldown — so say this
+              BEFORE they press it, not after. */}
+          {target === "email" && (
+            <p className="text-muted-2 text-sm">{t("checkSpam")}</p>
+          )}
 
           {/* The boxes. 56x56 on mobile so they clear a thumb. */}
           <div
@@ -345,7 +395,7 @@ export function OtpField({
             )}
             {phase === "error" && error && (
               <span className="text-danger">
-                {t(error)}
+                {t(error === "invalidPhone" ? copy.invalid : error)}
                 {attemptsLeft !== null && attemptsLeft > 0 && (
                   <>
                     {" "}

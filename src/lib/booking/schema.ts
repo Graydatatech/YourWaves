@@ -184,7 +184,14 @@ export type BookingDraft = z.infer<typeof bookingDraftSchema>;
  * be forgotten.
  */
 export type DraftState = Partial<BookingDraft> & {
+  /**
+   * The CONTACT that was verified — a phone or an email, matching
+   * `otpTarget`. Stored as the value rather than a boolean so editing the
+   * field revokes verification with no separate invalidation path to forget.
+   */
   verifiedPhone?: string;
+  /** Which contact the OTP step verifies, from /api/settings. Client-only. */
+  otpTarget?: "phone" | "email";
   /**
    * Whether terms exist at all, from /api/settings. Client-only, like
    * `verifiedPhone` — it tells the wizard whether to render the tick and
@@ -294,11 +301,33 @@ export const stepValidators: Record<
 /** True when the number currently entered is the one that was verified. */
 export function isPhoneVerified(draft: DraftState): boolean {
   if (!draft.verifiedPhone) return false;
-  const current = toE164(
-    draft.dialCode ?? DEFAULT_DIAL_CODE,
-    draft.phoneNational ?? "",
-  );
-  return current !== null && current === draft.verifiedPhone;
+  return verificationTargetValue(draft) === draft.verifiedPhone;
+}
+
+/**
+ * The value the customer must verify, per the active channel.
+ *
+ * Mirrors `verificationSubject` on the server, and must stay in step with it:
+ * if the two disagree the wizard sends a code to one contact and the booking
+ * route checks the other, and every submission is refused.
+ */
+export function verificationTargetValue(draft: DraftState): string | null {
+  /**
+   * Undefined until /api/settings lands, and NULL is the right answer then —
+   * not a guess at the likely channel. Guessing wrong sends the code to the
+   * contact the server is not checking, and the customer reads a valid code as
+   * broken. Null instead disables the send button for the sub-second the fetch
+   * takes, and blocks the step, which is recoverable and honest.
+   */
+  if (draft.otpTarget === undefined) return null;
+  if (draft.otpTarget === "phone") {
+    return toE164(
+      draft.dialCode ?? DEFAULT_DIAL_CODE,
+      draft.phoneNational ?? "",
+    );
+  }
+  const email = draft.customerEmail?.trim().toLowerCase();
+  return email && email !== "" ? email : null;
 }
 
 export type StepKey = keyof typeof stepValidators;

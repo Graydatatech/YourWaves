@@ -44,6 +44,8 @@ export type WhatsAppConfig = {
 
 export class WhatsAppCloudChannel implements OtpChannel {
   readonly name = "whatsapp";
+  /** Reaches a phone, so a phone is what it can attest to. */
+  readonly target = "phone" as const;
 
   constructor(private readonly config: WhatsAppConfig) {}
 

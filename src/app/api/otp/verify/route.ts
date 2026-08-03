@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { cookies } from "next/headers";
-import { normalisePhone, verifyOtp } from "@/lib/otp/service";
+import { normaliseDestination, verifyOtp } from "@/lib/otp/service";
+import { otpTarget } from "@/lib/otp";
 import { looksLikeCode, CODE_LENGTH } from "@/lib/otp/code";
 import {
   OTP_COOKIE_NAME,
@@ -10,20 +11,21 @@ import {
 } from "@/lib/otp/token";
 
 const bodySchema = z.object({
-  phone: z.string().trim().min(6).max(24),
+  destination: z.string().trim().min(3).max(160).optional(),
+  phone: z.string().trim().min(3).max(160).optional(),
   code: z.string().trim().length(CODE_LENGTH),
 });
 
 const NO_STORE = { "Cache-Control": "no-store" } as const;
 
 /**
- * POST /api/otp/verify  { phone, code }
+ * POST /api/otp/verify  { destination, code }
  *
- * On success, issues a 30-minute HttpOnly cookie proving THIS phone was
+ * On success, issues a 30-minute HttpOnly cookie proving THIS contact was
  * verified. Phases 5 and 6 require it before acting on a booking.
  *
- * The token carries the phone number and `verifyOtpToken()` is always called
- * with the number being acted on, so a token earned for one number cannot
+ * The token carries the subject and `verifyOtpToken()` is always called
+ * with the contact being acted on, so a token earned for one contact cannot
  * confirm a booking for another.
  */
 export async function POST(request: Request) {
@@ -45,10 +47,12 @@ export async function POST(request: Request) {
     );
   }
 
-  const phone = normalisePhone(parsed.data.phone);
-  if (!phone) {
+  const target = otpTarget();
+  const supplied = parsed.data.destination ?? parsed.data.phone ?? "";
+  const destination = normaliseDestination(supplied, target);
+  if (!destination) {
     return Response.json(
-      { error: "invalid_phone" },
+      { error: target === "email" ? "invalid_email" : "invalid_phone" },
       { status: 422, headers: NO_STORE },
     );
   }
@@ -63,7 +67,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const outcome = await verifyOtp({ phone, code: parsed.data.code });
+  const outcome = await verifyOtp({ destination, code: parsed.data.code });
 
   if (!outcome.ok) {
     const status =
@@ -88,14 +92,14 @@ export async function POST(request: Request) {
   const jar = await cookies();
   jar.set(
     OTP_COOKIE_NAME,
-    issueOtpToken(phone),
+    issueOtpToken(destination),
     cookieOptions(TOKEN_TTL_SECONDS),
   );
 
   return Response.json(
     {
       ok: true,
-      phone,
+      destination,
       // So the client can show the verification lapsing without decoding a
       // cookie it deliberately cannot read.
       expires_in: TOKEN_TTL_SECONDS,

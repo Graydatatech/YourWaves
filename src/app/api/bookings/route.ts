@@ -4,6 +4,7 @@ import { getBlackoutDates, getBookedDates, getSettings } from "@/db/queries";
 import { computeAvailability } from "@/lib/availability";
 import { normaliseTime } from "@/lib/dates";
 import { OTP_COOKIE_NAME, verifyOtpToken } from "@/lib/otp/token";
+import { verificationSubject } from "@/lib/otp";
 import { BOOKING_FORM } from "@/lib/booking/formConfig";
 
 /**
@@ -78,10 +79,13 @@ export async function POST(request: Request) {
   // show. See src/lib/booking/formConfig.ts for what turning it off costs.
   if (BOOKING_FORM.phoneVerification) {
     const jar = await cookies();
-    const verdict = verifyOtpToken(
-      jar.get(OTP_COOKIE_NAME)?.value,
-      submittedPhone,
-    );
+    const subject = verificationSubject({
+      phone: submittedPhone,
+      email: draft.customerEmail,
+    });
+    const verdict = subject
+      ? verifyOtpToken(jar.get(OTP_COOKIE_NAME)?.value, subject)
+      : ({ valid: false, reason: "malformed" } as const);
     if (!verdict.valid) {
       return Response.json(
         { error: "phone_not_verified", reason: verdict.reason },

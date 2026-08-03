@@ -38,6 +38,33 @@ export function normalisePhone(input: string): string | null {
   return parsed && parsed.isValid() ? parsed.number : null;
 }
 
+/** Lower-cased and trimmed, or null if it is not an address at all. */
+export function normaliseEmail(input: string): string | null {
+  const value = input.trim().toLowerCase();
+  // Deliberately loose. Anything stricter rejects real addresses, and the only
+  // proof that matters is whether the code arrives — an address that does not
+  // exist simply never verifies.
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(value) || value.length > 160) {
+    return null;
+  }
+  return value;
+}
+
+/**
+ * Normalises whatever the active channel targets.
+ *
+ * One function so the send route, the verify route and the booking routes
+ * cannot disagree about what "the same contact" means — a phone compared
+ * as typed against one stored as E.164 would never match, and an email
+ * compared case-sensitively would fail for anyone who capitalised it.
+ */
+export function normaliseDestination(
+  input: string,
+  target: "phone" | "email",
+): string | null {
+  return target === "email" ? normaliseEmail(input) : normalisePhone(input);
+}
+
 /**
  * True only when it is safe to echo the code back to the caller.
  *
@@ -62,11 +89,17 @@ export function devEchoEnabled(): boolean {
  * exists to close.
  */
 export async function sendOtp(params: {
-  phone: string;
+  /** The phone or the email, per the active channel's target. */
+  destination: string;
   locale: "ar" | "en";
   ip: string | null;
 }): Promise<SendOutcome> {
-  const { phone, locale, ip } = params;
+  const { destination, locale, ip } = params;
+  // The rate-limit column is named `phone` and is plain text; it holds whatever
+  // the channel targets. Renaming it would be a migration for a label, and the
+  // limits — 1/60s, 5/hour, 20/hour per IP, 3 distinct per IP — are exactly as
+  // meaningful for an inbox as for a number.
+  const phone = destination;
 
   const code = generateCode();
   const codeHash = await hashCode(code);
@@ -125,10 +158,12 @@ export async function sendOtp(params: {
  * it is the reason this cannot be a pure SQL function.
  */
 export async function verifyOtp(params: {
-  phone: string;
+  /** The phone or the email, per the active channel's target. */
+  destination: string;
   code: string;
 }): Promise<VerifyOutcome> {
-  const { phone, code } = params;
+  const { destination, code } = params;
+  const phone = destination;
 
   return sql.begin(async (tx) => {
     const rows = await tx<

@@ -41,9 +41,18 @@ function FlowInner() {
    */
   useEffect(() => {
     if (!settings) return;
-    if (draft.termsRequired === settings.termsAvailable) return;
-    patch({ termsRequired: settings.termsAvailable });
-  }, [settings, draft.termsRequired, patch]);
+    const patchable: Record<string, unknown> = {};
+    if (draft.termsRequired !== settings.termsAvailable) {
+      patchable.termsRequired = settings.termsAvailable;
+    }
+    // Which contact the OTP step verifies. Mirrored into the draft for the same
+    // reason as termsRequired: the step validator only sees the draft, and the
+    // wizard and the server must not disagree about which field is being proved.
+    if (draft.otpTarget !== settings.otpTarget) {
+      patchable.otpTarget = settings.otpTarget;
+    }
+    if (Object.keys(patchable).length > 0) patch(patchable);
+  }, [settings, draft.termsRequired, draft.otpTarget, patch]);
 
   // Start on the month of the selected date if there is one, else this month.
   const initialMonth = useMemo<IsoMonth>(

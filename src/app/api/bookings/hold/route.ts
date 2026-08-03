@@ -3,6 +3,7 @@ import { bookingRequestSchema, toE164 } from "@/lib/booking/schema";
 import { createHold, type HoldErrorCode } from "@/lib/booking/holds";
 import { OTP_COOKIE_NAME, verifyOtpToken } from "@/lib/otp/token";
 import { BOOKING_FORM } from "@/lib/booking/formConfig";
+import { verificationSubject } from "@/lib/otp";
 import { hasTerms } from "@/lib/booking/terms";
 
 const NO_STORE = { "Cache-Control": "no-store" } as const;
@@ -80,11 +81,16 @@ export async function POST(request: Request) {
   // leave the endpoint that actually TAKES the booking demanding a token the
   // customer was never given a way to earn. See @/lib/booking/formConfig.
   if (BOOKING_FORM.phoneVerification) {
+    // Whichever contact the active channel can actually reach — see
+    // verificationSubject. A code emailed to an inbox proves the inbox.
+    const subject = verificationSubject({
+      phone: submittedPhone,
+      email: draft.customerEmail,
+    });
     const jar = await cookies();
-    const verdict = verifyOtpToken(
-      jar.get(OTP_COOKIE_NAME)?.value,
-      submittedPhone,
-    );
+    const verdict = subject
+      ? verifyOtpToken(jar.get(OTP_COOKIE_NAME)?.value, subject)
+      : ({ valid: false, reason: "malformed" } as const);
     if (!verdict.valid) {
       return Response.json(
         { error: "phone_not_verified", reason: verdict.reason },

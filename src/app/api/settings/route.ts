@@ -2,6 +2,7 @@ import { getSettings } from "@/db/queries";
 import { normaliseTime } from "@/lib/dates";
 import { toServiceAreas } from "@/lib/booking/serviceArea";
 import { hasTerms } from "@/lib/booking/terms";
+import { otpTarget } from "@/lib/otp";
 
 /**
  * GET /api/settings
@@ -67,6 +68,15 @@ export async function GET() {
        * terms that do not exist.
        */
       termsAvailable: await hasTerms(),
+      /**
+       * Which contact the customer must verify — "phone" or "email".
+       *
+       * Derived from the active OTP channel, because a channel can only attest
+       * to what it can reach. The wizard reads this to decide which field to
+       * put the code box under and which value to send; the booking routes ask
+       * the same question server-side. Neither trusts the other.
+       */
+      otpTarget: otpTarget(),
       timeZone: "Asia/Qatar",
     },
     {

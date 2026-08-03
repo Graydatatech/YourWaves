@@ -10,6 +10,7 @@ import {
   DEFAULT_DIAL_CODE,
   isPhoneVerified,
   toE164,
+  verificationTargetValue,
 } from "@/lib/booking/schema";
 import { BOOKING_FORM } from "@/lib/booking/formConfig";
 import { Link } from "@/i18n/navigation";
@@ -65,6 +66,9 @@ export function DetailsStep({ showErrors }: DetailsStepProps) {
 
   const e164 = toE164(dial, national);
   const verified = isPhoneVerified(draft);
+  // The contact the active channel proves. Null while it is incomplete, which
+  // is what disables the "send code" button rather than sending to nothing.
+  const otpDestination = verificationTargetValue(draft);
 
   return (
     <div className="space-y-6">
@@ -135,7 +139,11 @@ export function DetailsStep({ showErrors }: DetailsStepProps) {
             dir="ltr"
             value={national}
             onChange={(event) => patch({ phoneNational: event.target.value })}
-            readOnly={verified}
+            // Locked once verified, so the proven number cannot drift out from
+            // under the token — but ONLY when the phone is what was proven.
+            // With the email channel live, locking this field would freeze a
+            // value nobody had verified.
+            readOnly={verified && draft.otpTarget === "phone"}
             placeholder={t("phonePlaceholder")}
             autoComplete="tel-national"
             invalid={(showErrors && phoneMissing) || phoneInvalid}
@@ -179,6 +187,7 @@ export function DetailsStep({ showErrors }: DetailsStepProps) {
             dir="ltr"
             value={email}
             onChange={(event) => patch({ customerEmail: event.target.value })}
+            readOnly={verified && draft.otpTarget !== "phone"}
             placeholder={t("emailPlaceholder")}
             autoComplete="email"
             invalid={showErrors && emailInvalid}
@@ -198,7 +207,6 @@ export function DetailsStep({ showErrors }: DetailsStepProps) {
                 : t("emailError")
               : ""}
           </p>
-          <p className="text-muted-2 mt-1 text-sm">{t("emailHint")}</p>
         </div>
       )}
 
@@ -206,15 +214,20 @@ export function DetailsStep({ showErrors }: DetailsStepProps) {
       {BOOKING_FORM.phoneVerification && (
         <div className="border-border rounded-2xl border p-4">
           <h4 className="text-ink mb-2 text-sm font-bold">
-            {t("verifyHeading")}
+            {draft.otpTarget === "phone"
+              ? t("verifyHeading")
+              : t("verifyHeadingEmail")}
           </h4>
           <OtpField
-            // Remount when the number changes, discarding any code in progress.
-            key={e164 ?? "no-phone"}
-            phone={e164}
+            // Remount when the contact changes, discarding any code in
+            // progress. Keyed on the value being verified, which is the email
+            // or the phone depending on the active channel.
+            key={otpDestination ?? "no-contact"}
+            destination={otpDestination}
+            target={draft.otpTarget === "phone" ? "phone" : "email"}
             locale={locale}
-            verifiedPhone={draft.verifiedPhone}
-            onVerified={(phone) => patch({ verifiedPhone: phone })}
+            verifiedContact={draft.verifiedPhone}
+            onVerified={(contact) => patch({ verifiedPhone: contact })}
           />
           {verified && (
             <button
@@ -225,7 +238,9 @@ export function DetailsStep({ showErrors }: DetailsStepProps) {
               }
               className="text-muted hover:text-ink mt-3 min-h-11 text-sm font-semibold underline"
             >
-              {t("changeNumber")}
+              {draft.otpTarget === "phone"
+                ? t("changeNumber")
+                : t("changeEmail")}
             </button>
           )}
         </div>

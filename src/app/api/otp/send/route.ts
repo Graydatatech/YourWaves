@@ -1,15 +1,23 @@
 import { z } from "zod";
-import { clientIp, normalisePhone, sendOtp } from "@/lib/otp/service";
+import {
+  clientIp,
+  normaliseDestination,
+  sendOtp,
+} from "@/lib/otp/service";
+import { otpTarget } from "@/lib/otp";
 
 const bodySchema = z.object({
-  phone: z.string().trim().min(6).max(24),
+  // Named `destination` because it is a phone or an email depending on the
+  // active channel. `phone` is still accepted so an older client keeps working.
+  destination: z.string().trim().min(3).max(160).optional(),
+  phone: z.string().trim().min(3).max(160).optional(),
   locale: z.enum(["ar", "en"]).default("ar"),
 });
 
 const NO_STORE = { "Cache-Control": "no-store" } as const;
 
 /**
- * POST /api/otp/send  { phone, locale }
+ * POST /api/otp/send  { destination, locale }
  *
  * Two properties matter more than the happy path:
  *
@@ -18,7 +26,7 @@ const NO_STORE = { "Cache-Control": "no-store" } as const;
  *    enforces as an AND — a production build that inherited the flag still
  *    leaks nothing.
  *
- * 2. NOTHING HERE REVEALS WHETHER A NUMBER IS KNOWN. Every outcome for a
+ * 2. NOTHING HERE REVEALS WHETHER A CONTACT IS KNOWN. Every outcome for a
  *    well-formed number is shaped identically, and rate-limit responses say only
  *    "too many requests" plus when to retry. An endpoint that answered
  *    differently for a number that has booked before would be a customer-list
@@ -43,16 +51,18 @@ export async function POST(request: Request) {
     );
   }
 
-  const phone = normalisePhone(parsed.data.phone);
-  if (!phone) {
+  const target = otpTarget();
+  const supplied = parsed.data.destination ?? parsed.data.phone ?? "";
+  const destination = normaliseDestination(supplied, target);
+  if (!destination) {
     return Response.json(
-      { error: "invalid_phone" },
+      { error: target === "email" ? "invalid_email" : "invalid_phone" },
       { status: 422, headers: NO_STORE },
     );
   }
 
   const outcome = await sendOtp({
-    phone,
+    destination,
     locale: parsed.data.locale,
     ip: clientIp(request),
   });

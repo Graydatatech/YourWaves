@@ -13,6 +13,16 @@ import type { OtpChannel } from "./channel";
  */
 export class ConsoleChannel implements OtpChannel {
   readonly name = "console";
+  /**
+   * Follows OTP_TARGET, defaulting to email.
+   *
+   * The console channel prints wherever it is pointed, so its target is not a
+   * property of the transport — it is whatever the developer is standing in for.
+   * Email is the default because that is what a real deployment uses today; set
+   * OTP_TARGET=phone to rehearse the WhatsApp flow locally.
+   */
+  readonly target =
+    process.env.OTP_TARGET === "phone" ? ("phone" as const) : ("email" as const);
 
   async send(phone: string, code: string, locale: "ar" | "en"): Promise<void> {
     // Deliberately loud: this must be impossible to mistake for a real send.

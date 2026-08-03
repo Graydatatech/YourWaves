@@ -3,6 +3,7 @@ import { z } from "zod";
 import { getHold, releaseHold } from "@/lib/booking/holds";
 import { OTP_COOKIE_NAME, verifyOtpToken } from "@/lib/otp/token";
 import { BOOKING_FORM } from "@/lib/booking/formConfig";
+import { verificationSubject } from "@/lib/otp";
 
 const NO_STORE = { "Cache-Control": "no-store" } as const;
 const paramsSchema = z.object({ id: z.string().uuid() });
@@ -97,8 +98,11 @@ async function resolveBookingPhone(
   token: string | undefined,
 ): Promise<{ phone: string } | null> {
   const { sql } = await import("@/db/client");
-  const rows = await sql<{ customer_phone: string }[]>`
-    SELECT customer_phone FROM bookings WHERE id = ${bookingId}::uuid
+  const rows = await sql<
+    { customer_phone: string; customer_email: string | null }[]
+  >`
+    SELECT customer_phone, customer_email
+      FROM bookings WHERE id = ${bookingId}::uuid
   `;
   const phone = rows[0]?.customer_phone;
   if (!phone) return null;
@@ -109,7 +113,14 @@ async function resolveBookingPhone(
   // the flag is on, so reaching here without one would be a caller bug.
   if (!token) return null;
 
-  const verdict = verifyOtpToken(token, phone);
+  // The contact the active channel verifies — see verificationSubject.
+  const subject = verificationSubject({
+    phone,
+    email: rows[0]?.customer_email,
+  });
+  if (!subject) return null;
+
+  const verdict = verifyOtpToken(token, subject);
   return verdict.valid ? { phone } : null;
 }
 

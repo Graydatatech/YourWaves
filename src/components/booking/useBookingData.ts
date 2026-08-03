@@ -28,6 +28,8 @@ export type PublicSettings = {
   serviceAreas: ServiceArea[];
   /** True when terms exist to agree to. The tick is hidden when they do not. */
   termsAvailable: boolean;
+  /** Which contact the OTP step verifies. */
+  otpTarget: "phone" | "email";
   timeZone: string;
 };
 
@@ -51,6 +53,7 @@ export function useSettings() {
             ...data,
             serviceAreas: toServiceAreas(data.serviceAreas),
             termsAvailable: data.termsAvailable === true,
+            otpTarget: data.otpTarget === "phone" ? "phone" : "email",
           });
         }
       })

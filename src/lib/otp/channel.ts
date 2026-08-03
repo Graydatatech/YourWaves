@@ -9,7 +9,22 @@ import "server-only";
  * the endpoints changing.
  */
 export interface OtpChannel {
-  send(phone: string, code: string, locale: "ar" | "en"): Promise<void>;
+  /**
+   * Where the code goes — and therefore WHAT IS PROVEN.
+   *
+   * A channel can only attest to the thing it can reach. Emailing a code and
+   * then marking a phone number verified would prove control of an inbox while
+   * claiming something about a phone, which is worth nothing. So the channel
+   * declares its target and the rest of the flow follows it: the token is bound
+   * to that value, and the booking routes check the same field.
+   */
+  readonly target: "phone" | "email";
+  /** The phone or email, per `target`. */
+  send(
+    destination: string,
+    code: string,
+    locale: "ar" | "en",
+  ): Promise<void>;
   /** Identifies the implementation in logs and health checks. */
   readonly name: string;
 }
