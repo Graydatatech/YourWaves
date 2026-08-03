@@ -16,7 +16,6 @@ import {
 } from "./components";
 import { email } from "./theme";
 import type { TemplateContext } from "./context";
-import { formatMoney } from "@/lib/booking/format";
 
 /**
  * The email bodies. One exported function per template key.
@@ -93,10 +92,10 @@ function ContactBlock({ ctx }: { ctx: TemplateContext }) {
 // ---------------------------------------------------------------------------
 
 export function BookingConfirmedEmail(ctx: TemplateContext): ReactElement {
-  const { t, dir, payload } = ctx;
-  const currency = payload.currency ?? "QAR";
-  const money = (value?: number) =>
-    value === undefined ? "" : formatMoney(value, currency, ctx.locale);
+  // `payload` is no longer read here: the per-line prices it carried are not
+  // shown, and the total comes pre-formatted on the context. The local `money`
+  // helper and the `currency` it closed over went with them.
+  const { t, dir } = ctx;
 
   return (
     <Frame ctx={ctx} preheader={t("bookingConfirmed.preheader")}>
@@ -115,27 +114,24 @@ export function BookingConfirmedEmail(ctx: TemplateContext): ReactElement {
         <DetailTable dir={dir} rows={bookingRows(ctx)} />
       </Block>
 
-      {/* The invoice-style breakdown the brief asks for: every line that made
-          up the total, then the total itself. */}
+      {/*
+        ONE PRICE, not a breakdown.
+
+        The original invoice-style table listed rental, setup and delivery
+        before the total. Migration 0012 folded all three into a single day
+        rate and writes setup and delivery as zero, so two of those lines had
+        become "QAR 0" on every new booking — an itemisation that makes the
+        business look like it is charging for things it is not, and invites
+        the question of what the zeroes mean.
+
+        The columns still exist and a booking taken before 0012 still holds
+        real values in them, which is why nothing was deleted from the
+        payload. It is simply not shown.
+      */}
       <Block dir={dir} paddingTop={20}>
         <DetailTable
           dir={dir}
           rows={[
-            {
-              label: t("price.rental"),
-              value: money(payload.price_rental),
-              isolate: true,
-            },
-            {
-              label: t("price.setup"),
-              value: money(payload.price_setup),
-              isolate: true,
-            },
-            {
-              label: t("price.delivery"),
-              value: money(payload.price_delivery),
-              isolate: true,
-            },
             {
               label: t("price.total"),
               value: ctx.total,
