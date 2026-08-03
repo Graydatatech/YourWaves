@@ -110,13 +110,13 @@
       "waterLabel": "سرعة الماء",
       "waterValue": "18 – 45 كم/س",
       "ridersLabel": "عدد الراكبين",
-      "ridersValue": "حتى 30 يوميًا",
+      "ridersValue": "راكب واحد",
       "ageLabel": "الحد الأدنى للعمر",
       "ageValue": "7 سنوات",
       "powerLabel": "الطاقة",
       "powerValue": "مولّد صامت مرفق",
       "crewLabel": "الفريق في الموقع",
-      "crewValue": "منقذان + فني"
+      "crewValue": "حسب الاختيار"
     }
   },
   "gallery": {

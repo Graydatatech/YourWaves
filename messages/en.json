@@ -110,13 +110,13 @@
       "waterLabel": "Water speed",
       "waterValue": "18 – 45 km/h",
       "ridersLabel": "Riders",
-      "ridersValue": "Up to 30 per day",
+      "ridersValue": "One at a time",
       "ageLabel": "Minimum age",
       "ageValue": "7 years",
       "powerLabel": "Power",
       "powerValue": "Silent generator included",
       "crewLabel": "Crew on site",
-      "crewValue": "2 lifeguards + 1 technician"
+      "crewValue": "As selected"
     }
   },
   "gallery": {
