@@ -85,7 +85,7 @@
       "delivery": {
         "tag": "Morning",
         "title": "Delivery & install",
-        "body": "Our crew arrives before your booking time and runs the full safety check. Setup takes about ninety minutes and needs a flat 10 × 5 metre space with vehicle access."
+        "body": "Our crew arrives several hours before your booking time to set up, prepare and run the full safety check. It needs a flat 10 × 5 metre space with vehicle access."
       },
       "session": {
         "tag": "Midday",
@@ -178,7 +178,7 @@
       "dateTitle": "Pick your day",
       "dateHelp": "One booking per day, so the wave is yours from setup to sunset.",
       "timeTitle": "What time should we set up?",
-      "timeHelp": "Our crew needs about ninety minutes before the first rider.",
+      "timeHelp": "Our crew arrives several hours before the first rider.",
       "locationTitle": "Where are we going?",
       "locationHelp": "A flat 10 × 5 metre area with vehicle access.",
       "detailsTitle": "How do we reach you?",
@@ -436,7 +436,7 @@
       "heading": "You're booked",
       "intro": "Thanks {name} — your date is locked in and paid in full. Here is everything for the day.",
       "summaryTitle": "Your booking",
-      "whatsapp": "Your YourWaves booking is confirmed ✅\nReference: {reference}\nDate: {date}\nSetup time: {time}\nAddress: {address}\nTotal paid: {total}\n\nOur crew arrives about 90 minutes early. Reply here if anything changes."
+      "whatsapp": "Your YourWaves booking is confirmed ✅\nReference: {reference}\nDate: {date}\nSetup time: {time}\nAddress: {address}\nTotal paid: {total}\n\nOur crew arrives several hours early. Reply here if anything changes."
     },
     "adminBookingConfirmed": {
       "subject": "New booking — {reference} on {date}",
@@ -463,8 +463,8 @@
       "assigned": {
         "subject": "Your crew is confirmed — {reference}",
         "heading": "Your crew is confirmed",
-        "body": "{driver} will be delivering your Flowrider on {date}. They arrive about ninety minutes before your {time} start.",
-        "whatsapp": "YourWaves {reference}: your crew is confirmed for {date}. {driver} arrives about 90 minutes before your {time} start."
+        "body": "{driver} will be delivering your Flowrider on {date}. They arrive several hours before your {time} start.",
+        "whatsapp": "YourWaves {reference}: your crew is confirmed for {date}. {driver} arrives several hours before your {time} start."
       },
       "en_route": {
         "subject": "Your crew is on the way — {reference}",

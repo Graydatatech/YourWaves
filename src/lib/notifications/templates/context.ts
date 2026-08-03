@@ -113,8 +113,18 @@ export function buildMapsLink(payload: NotificationPayload): string {
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
 }
 
-/** How long before the customer's slot the crew is expected on site. */
-export const CREW_LEAD_MINUTES = 90;
+/**
+ * How long before the customer's slot the crew is expected on site.
+ *
+ * 180, not 90. The customer-facing copy no longer promises "about ninety
+ * minutes" — it says the crew arrives several hours early — and this is the
+ * figure the DRIVER is held to on the job sheet. Leaving it at 90 would mean
+ * telling the customer one thing and the crew another about the same morning.
+ *
+ * Three hours is the plain reading of "several hours". It is one number in one
+ * place (mirrored in dispatch/service.ts) if the real policy is different.
+ */
+export const CREW_LEAD_MINUTES = 180;
 
 /**
  * Subtracts the crew lead time from the start, on the clock face.

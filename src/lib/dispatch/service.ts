@@ -241,8 +241,13 @@ export async function resolveDispatchToken(
   };
 }
 
-/** Ninety minutes before the customer's slot, on the clock face. */
-export const CREW_LEAD_MINUTES = 90;
+/**
+ * How long before the customer's slot the crew is on site, on the clock face.
+ *
+ * Must match CREW_LEAD_MINUTES in templates/context.ts: the job sheet and the
+ * assignment message would otherwise give the same driver two arrival times.
+ */
+export const CREW_LEAD_MINUTES = 180;
 
 export function arrivalClock(start: string): string {
   const [hour, minute] = start.split(":").map(Number);
