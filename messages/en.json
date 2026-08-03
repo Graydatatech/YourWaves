@@ -106,7 +106,7 @@
     "imageAlt": "The flowrider unit installed beside a private villa pool",
     "specs": {
       "footprintLabel": "Footprint",
-      "footprintValue": "12 × 6 m",
+      "footprintValue": "5 × 10 m",
       "waterLabel": "Water speed",
       "waterValue": "18 – 45 km/h",
       "ridersLabel": "Riders",
@@ -154,7 +154,7 @@
     "items": {
       "space": {
         "question": "How much space do I need?",
-        "answer": "A flat, level area of roughly 12 × 6 metres with clear vehicle access for delivery. Grass, tile and poolside decking all work. If you are unsure, send us a photo and we will tell you honestly whether it fits."
+        "answer": "A flat, level area of roughly 5 × 10 metres with clear vehicle access for delivery. Grass, tile and poolside decking all work. If you are unsure, send us a photo and we will tell you honestly whether it fits."
       },
       "water": {
         "question": "Do you use my pool water?",
@@ -196,7 +196,7 @@
       "timeTitle": "What time should we set up?",
       "timeHelp": "Our crew needs about ninety minutes before the first rider.",
       "locationTitle": "Where are we going?",
-      "locationHelp": "A flat 12 x 6 metre area with vehicle access.",
+      "locationHelp": "A flat 5 × 10 metre area with vehicle access.",
       "detailsTitle": "How do we reach you?",
       "detailsHelp": "We will confirm by WhatsApp on the number you give us."
     },
@@ -394,7 +394,7 @@
       "tryAgain": "Try again",
       "prepTitle": "Before the day",
       "prep": {
-        "space": "Clear a flat 12 × 6 metre area with vehicle access — grass, tile or poolside decking all work.",
+        "space": "Clear a flat 5 × 10 metre area with vehicle access — grass, tile or poolside decking all work.",
         "power": "Nothing needed from you: the unit brings its own silent generator.",
         "water": "The unit arrives filled. We will not draw from or drain into your pool.",
         "arrival": "Our crew arrives about ninety minutes before your start time to set up and run the safety check."
@@ -440,7 +440,7 @@
     },
     "prep": {
       "title": "Before the day",
-      "space": "Clear a flat 12 × 6 metre area with vehicle access — grass, tile or poolside decking all work.",
+      "space": "Clear a flat 5 × 10 metre area with vehicle access — grass, tile or poolside decking all work.",
       "power": "Nothing needed from you: the unit brings its own silent generator.",
       "water": "The unit arrives filled. We will not draw from or drain into your pool.",
       "arrival": "Our crew arrives about ninety minutes before your start time to set up and run the safety check.",
