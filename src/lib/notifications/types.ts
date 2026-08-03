@@ -93,6 +93,12 @@ export type NotificationPayload = {
   driver_phone?: string;
   service_areas?: string[];
 
+  // Present only on booking_survey: the raw capability token for the survey
+  // link. Carried in the payload rather than read from `reviews` at send time,
+  // because the payload is frozen at enqueue — a message sent after a retry
+  // must carry the token it was minted with, not one generated later.
+  review_token?: string;
+
   // Present only on dispatch_job: the raw capability token for THIS recipient.
   dispatch_token?: string;
   dispatch_id?: string;
