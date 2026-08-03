@@ -100,7 +100,7 @@ describe("step validators", () => {
     /**
      * Whether name + number is SUFFICIENT depends on the OTP flag, so the
      * assertion follows it rather than pinning one setting. SRS 3.5 requires
-     * verification; `BOOKING_FORM.phoneVerification` is what turns that
+     * verification; `BOOKING_FORM.contactVerification` is what turns that
      * requirement on, and the same flag gates the two endpoints — so this also
      * fails if the flag is flipped without the validator following.
      */
@@ -110,7 +110,7 @@ describe("step validators", () => {
       phoneNational: "55123456",
     });
     expect(unverified).toBe(
-      BOOKING_FORM.phoneVerification ? "needVerification" : null,
+      BOOKING_FORM.contactVerification ? "needVerification" : null,
     );
 
     // A verified number always satisfies the step, either way.
@@ -134,7 +134,7 @@ describe("step validators", () => {
       dialCode: DEFAULT_DIAL_CODE,
       phoneNational: "55123456",
     };
-    if (BOOKING_FORM.phoneVerification) {
+    if (BOOKING_FORM.contactVerification) {
       expect(stepValidators.details(draft)).toBe("needVerification");
     } else {
       expect(stepValidators.details(draft)).toBeNull();

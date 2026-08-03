@@ -4,7 +4,7 @@ import { getBlackoutDates, getBookedDates, getSettings } from "@/db/queries";
 import { computeAvailability } from "@/lib/availability";
 import { normaliseTime } from "@/lib/dates";
 import { OTP_COOKIE_NAME, verifyOtpToken } from "@/lib/otp/token";
-import { verificationSubject } from "@/lib/otp";
+import { otpTarget, verificationSubject } from "@/lib/otp";
 import { BOOKING_FORM } from "@/lib/booking/formConfig";
 
 /**
@@ -77,7 +77,7 @@ export async function POST(request: Request) {
   // The gate is skipped only when the STEP IS ALSO HIDDEN — one flag drives
   // both, so the server can never demand a token for a step the form does not
   // show. See src/lib/booking/formConfig.ts for what turning it off costs.
-  if (BOOKING_FORM.phoneVerification) {
+  if (BOOKING_FORM.contactVerification) {
     const jar = await cookies();
     const subject = verificationSubject({
       phone: submittedPhone,
@@ -157,13 +157,21 @@ export async function POST(request: Request) {
     bookingDate: draft.bookingDate,
     preferredStart: requestedStart,
     customerName: draft.customerName,
-    // The E.164 number derived from the body. When verification is on, the
-    // check above has already proved the token was issued for THIS number, so
-    // the two are equal; with it off there is no token to read one from.
+    // The E.164 number derived from the body.
     customerPhone: submittedPhone,
-    phoneVerifiedAt: BOOKING_FORM.phoneVerification
-      ? new Date().toISOString()
-      : null,
+    /**
+     * Stamped ONLY when the phone is what was actually proved.
+     *
+     * The gate above verifies whichever contact the live channel can reach, and
+     * today that is the email address. Recording a phone as verified because
+     * somebody read their inbox would put a claim in the database that no
+     * evidence supports — and this column is what a dispatcher trusts when they
+     * decide whether to ring a number before driving to a villa.
+     */
+    phoneVerifiedAt:
+      BOOKING_FORM.contactVerification && otpTarget() === "phone"
+        ? new Date().toISOString()
+        : null,
     customerEmail: draft.customerEmail ?? null,
     addressLine: draft.addressLine,
     area: draft.area ?? null,

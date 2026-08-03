@@ -80,7 +80,7 @@ export async function POST(request: Request) {
   // Gated by the flag the form reads, so hiding the verification step cannot
   // leave the endpoint that actually TAKES the booking demanding a token the
   // customer was never given a way to earn. See @/lib/booking/formConfig.
-  if (BOOKING_FORM.phoneVerification) {
+  if (BOOKING_FORM.contactVerification) {
     // Whichever contact the active channel can actually reach — see
     // verificationSubject. A code emailed to an inbox proves the inbox.
     const subject = verificationSubject({

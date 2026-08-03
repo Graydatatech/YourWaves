@@ -71,7 +71,7 @@ export async function POST(
    *
    * GATED BY THE SAME FLAG THE FORM READS, like /api/bookings and
    * /api/bookings/hold. This route and /release were missed when the flag was
-   * introduced, and the consequence was total: with `phoneVerification: false`
+   * introduced, and the consequence was total: with `contactVerification: false`
    * the wizard never renders the OTP step, so no cookie is ever issued, so this
    * endpoint refused EVERY payment with a 403. A customer could book and hold a
    * date and then never pay for it — the product's whole revenue path, dead, in
@@ -79,7 +79,7 @@ export async function POST(
    *
    * If a gate is behind a flag, every gate on the same path has to be.
    */
-  if (BOOKING_FORM.phoneVerification) {
+  if (BOOKING_FORM.contactVerification) {
     const jar = await cookies();
     const token = jar.get(OTP_COOKIE_NAME)?.value;
 

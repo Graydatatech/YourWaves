@@ -36,7 +36,7 @@ export async function POST(
   const jar = await cookies();
   const token = jar.get(OTP_COOKIE_NAME)?.value;
   // Only demanded when the verification step is actually shown to the customer.
-  if (BOOKING_FORM.phoneVerification && !token) {
+  if (BOOKING_FORM.contactVerification && !token) {
     return Response.json(
       { error: "phone_not_verified" },
       { status: 403, headers: NO_STORE },
@@ -82,7 +82,7 @@ export async function POST(
  * it: read the booking, then require the token to be valid FOR THAT phone. A
  * token for another number therefore cannot reach this booking at all.
  *
- * The token is only ENFORCED when `BOOKING_FORM.phoneVerification` is on. With
+ * The token is only ENFORCED when `BOOKING_FORM.contactVerification` is on. With
  * the flag off the wizard never renders the OTP step, so no cookie is ever
  * issued and demanding one here would refuse every request — which is exactly
  * what this route and /checkout did until phase 10 caught it. /api/bookings and
@@ -107,7 +107,7 @@ async function resolveBookingPhone(
   const phone = rows[0]?.customer_phone;
   if (!phone) return null;
 
-  if (!BOOKING_FORM.phoneVerification) return { phone };
+  if (!BOOKING_FORM.contactVerification) return { phone };
 
   // Defensive: the call sites already refuse a missing token with a 403 when
   // the flag is on, so reaching here without one would be a caller bug.
@@ -144,7 +144,7 @@ export async function GET(
   const jar = await cookies();
   const token = jar.get(OTP_COOKIE_NAME)?.value;
   // Only demanded when the verification step is actually shown to the customer.
-  if (BOOKING_FORM.phoneVerification && !token) {
+  if (BOOKING_FORM.contactVerification && !token) {
     return Response.json(
       { error: "phone_not_verified" },
       { status: 403, headers: NO_STORE },

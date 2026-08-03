@@ -6,7 +6,8 @@
  * turning one back on is a single `true`, and nothing has to be remembered
  * about which JSX was deleted.
  *
- * Everything here is OPTIONAL data except the last flag — see its note. The
+ * Everything here is OPTIONAL data except the last two flags — see their
+ * notes. The
  * columns stay in the database and the schema still accepts the values, so a
  * booking taken before or after a switch flips reads back identically.
  */
@@ -38,18 +39,25 @@ export const BOOKING_FORM = {
   email: true,
 
   /**
-   * "Verify your mobile" — the WhatsApp OTP step (SRS 3.5, §4d).
+   * The one-time-code step (SRS 3.5, §4d).
    *
-   * THIS ONE IS NOT COSMETIC. `POST /api/bookings` reads the same flag and
-   * stops requiring the phone-bound cookie when it is off, because a hidden
-   * step the server still demanded would mean every submission returning 403.
+   * WAS `phoneVerification`, and the rename is the point: the code now proves
+   * control of whichever contact the active OTP channel can reach, which is the
+   * EMAIL address today. WhatsApp still has no approved Meta template, so a
+   * flag named for the phone would have described a check that verifies
+   * something else — see otpTarget() in @/lib/otp.
    *
-   * Turning it off means an unverified number can make a booking: a typo
-   * reaches nobody, and a stranger can book against somebody else's number.
-   * The whole OTP path — the rate limits, the hashing, the attempt cap, the
-   * token binding — is still there and still tested; nothing was deleted.
-   * Set this back to `true` before launch and the step reappears on both
-   * sides at once.
+   * THIS ONE IS NOT COSMETIC. Four routes read the same flag —
+   * POST /api/bookings, /hold, /[id]/checkout and /[id]/release — and stop
+   * requiring the verification cookie when it is off, because a hidden step the
+   * server still demanded would mean every submission returning 403. That is
+   * not hypothetical: /checkout and /release were missed when the flag was
+   * introduced and refused every payment for as long as it was false.
+   *
+   * ON requires `OTP_CHANNEL=email` and a working email transport in the
+   * deployed environment. With neither set, createOtpChannel() throws in
+   * production and "send code" answers 502 — loudly, by design, rather than
+   * pretending to have sent something.
    */
-  phoneVerification: false,
+  contactVerification: true,
 } as const;

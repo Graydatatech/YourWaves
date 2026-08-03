@@ -253,7 +253,8 @@
       "termsAgree": "I agree to the <link>terms and conditions</link>",
       "termsError": "Please agree to the terms and conditions to continue.",
       "changeEmail": "Use a different email",
-      "verifyHeadingEmail": "Verify your email"
+      "verifyHeadingEmail": "Verify your email",
+      "emailHintVerify": "Your booking confirmation and receipt are sent here. You will verify this address in a moment."
     },
     "summary": {
       "title": "Your booking",

@@ -286,7 +286,7 @@ export const stepValidators: Record<
     // the number currently entered, so editing the field revokes verification.
     // Gated by the same flag the route reads, so the step cannot be required
     // here while the server ignores it, or hidden here while the server insists.
-    if (BOOKING_FORM.phoneVerification && !isPhoneVerified(draft)) {
+    if (BOOKING_FORM.contactVerification && !isPhoneVerified(draft)) {
       return "needVerification";
     }
     // Only demanded when there are terms to agree to. `termsRequired` is set

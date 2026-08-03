@@ -151,9 +151,12 @@ export function DetailsStep({ showErrors }: DetailsStepProps) {
           />
         </div>
         <p id={phoneHintId} className="text-muted-2 mt-1 text-sm">
-          {/* The standard hint promises a verification step. With that step
-              hidden the promise would be a lie, so the copy follows the flag. */}
-          {BOOKING_FORM.phoneVerification
+          {/* The standard hint promises "you will verify this number next".
+              That is only true when the PHONE is what the live channel proves —
+              with the email channel on, the number is never verified and the
+              promise would be a lie. So the copy follows the target, not the
+              flag. */}
+          {BOOKING_FORM.contactVerification && draft.otpTarget === "phone"
             ? t("phoneHint")
             : t("phoneHintNoVerify")}
         </p>
@@ -179,7 +182,11 @@ export function DetailsStep({ showErrors }: DetailsStepProps) {
           {/* Says WHY it is being asked for. An email field on a form that
               otherwise runs on WhatsApp reads as marketing capture unless the
               reason is on screen. */}
-          <p className="text-muted-2 mt-1 mb-2 text-sm">{t("emailHint")}</p>
+          <p className="text-muted-2 mt-1 mb-2 text-sm">
+            {BOOKING_FORM.contactVerification && draft.otpTarget !== "phone"
+              ? t("emailHintVerify")
+              : t("emailHint")}
+          </p>
           <Input
             id={emailId}
             type="email"
@@ -211,7 +218,7 @@ export function DetailsStep({ showErrors }: DetailsStepProps) {
       )}
 
       {/* Verification (SRS 3.5) ------------------------------------------- */}
-      {BOOKING_FORM.phoneVerification && (
+      {BOOKING_FORM.contactVerification && (
         <div className="border-border rounded-2xl border p-4">
           <h4 className="text-ink mb-2 text-sm font-bold">
             {draft.otpTarget === "phone"
