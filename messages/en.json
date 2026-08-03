@@ -80,12 +80,12 @@
   "howItWorks": {
     "kicker": "How it works",
     "title": "Three steps, one day, nothing for you to carry",
-    "description": "From the moment the truck arrives to the moment it leaves, the day is run by our crew.",
+    "description": "From the moment the ride arrives to the moment it leaves, the only thing you provide is the space.",
     "steps": {
       "delivery": {
         "tag": "Morning",
         "title": "Delivery & install",
-        "body": "Our crew arrives at first light, levels the rig beside your pool and runs the full safety check. Setup takes about ninety minutes and needs a flat 12 × 6 metre space with vehicle access."
+        "body": "Our crew arrives before your booking time and runs the full safety check. Setup takes about ninety minutes and needs a flat 5 × 10 metre space with vehicle access."
       },
       "session": {
         "tag": "Midday",
