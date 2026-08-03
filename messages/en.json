@@ -130,24 +130,7 @@
     "kicker": "What guests say",
     "title": "Quietly, the best day of the summer",
     "goToSlide": "Go to testimonial {number}",
-    "ratingLabel": "Rated {rating} out of 5",
-    "items": {
-      "one": {
-        "quote": "The crew arrived before we were awake and the wave was running by breakfast. My daughter refused to get off it.",
-        "name": "Noora A.",
-        "role": "Al Wakrah"
-      },
-      "two": {
-        "quote": "I expected an inflatable toy. What turned up was a proper wave — my brother surfs and he could not fault it.",
-        "name": "Khalid M.",
-        "role": "Lusail"
-      },
-      "three": {
-        "quote": "Twenty-two guests, nobody waiting more than a few minutes, and the garden looked untouched by the time they left.",
-        "name": "Sara H.",
-        "role": "West Bay"
-      }
-    }
+    "ratingLabel": "Rated {rating} out of 5"
   },
   "faq": {
     "kicker": "FAQ",

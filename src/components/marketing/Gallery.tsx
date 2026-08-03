@@ -34,7 +34,6 @@ const TILES = [
 
 export async function Gallery() {
   const t = await getTranslations("gallery");
-  const tTestimonials = await getTranslations("testimonials");
 
   const rawLocale = await getLocale();
   const locale = isLocale(rawLocale) ? rawLocale : routing.defaultLocale;
@@ -46,29 +45,26 @@ export async function Gallery() {
    * can have neither, which is the honest trade for being editable.
    */
   /**
-   * Published customer reviews if there are any, the three designed examples
-   * otherwise. Fetched here because Testimonials is a Client Component — it
-   * owns a scroll-snap carousel and an IntersectionObserver — so it cannot read
-   * the database itself, and turning it into a server component would mean
-   * hydrating the carousel separately for no gain.
+   * Published customer reviews, and NOTHING when there are none.
+   *
+   * There is deliberately no fallback to sample quotes. Invented testimonials
+   * on a page that also asks for money are a straightforward misrepresentation,
+   * and the three that used to live here read as real — a name, an area, a
+   * specific story. An absent section is honest; the section reappears on its
+   * own the moment an admin publishes the first genuine comment.
+   *
+   * Fetched here because Testimonials is a Client Component — it owns a
+   * scroll-snap carousel and an IntersectionObserver — so it cannot read the
+   * database itself.
    */
   const reviews = await getPublishedReviews(6);
-  const testimonials =
-    reviews.length > 0
-      ? reviews.map((review) => ({
-          id: review.id,
-          quote: review.comment,
-          name: review.authorName || t("anonymous"),
-          role: review.authorArea ?? "",
-          rating: review.rating,
-        }))
-      : (["one", "two", "three"] as const).map((key) => ({
-          id: key,
-          quote: tTestimonials(`items.${key}.quote`),
-          name: tTestimonials(`items.${key}.name`),
-          role: tTestimonials(`items.${key}.role`),
-          rating: 5,
-        }));
+  const testimonials = reviews.map((review) => ({
+    id: review.id,
+    quote: review.comment,
+    name: review.authorName || t("anonymous"),
+    role: review.authorArea ?? "",
+    rating: review.rating,
+  }));
 
   const tiles = await getGallery(
     locale,
@@ -126,7 +122,8 @@ export async function Gallery() {
         </div>
       </div>
 
-      <Testimonials items={testimonials} />
+      {/* Absent until there is something real to show — see the note above. */}
+      {testimonials.length > 0 && <Testimonials items={testimonials} />}
     </section>
   );
 }
