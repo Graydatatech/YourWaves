@@ -76,7 +76,7 @@ export function siteOrigin(): string {
 
 /** The business WhatsApp number shown to customers. */
 export function supportPhone(): string {
-  return process.env.NEXT_PUBLIC_SUPPORT_PHONE ?? "+974 5512 3456";
+  return process.env.NEXT_PUBLIC_SUPPORT_PHONE ?? "+974 5006 7667";
 }
 
 /**

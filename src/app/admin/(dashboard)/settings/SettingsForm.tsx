@@ -546,7 +546,7 @@ export function SettingsForm({
               <input
                 dir="ltr"
                 className={FIELD}
-                placeholder="wa.me/97455123456"
+                placeholder="wa.me/97450067667"
                 {...field("footerWhatsapp")}
               />
             </Labelled>
