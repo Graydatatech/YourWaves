@@ -66,17 +66,15 @@
   "hero": {
     "badge": "By invitation · Limited daily slots",
     "title": "The wave arrives at your door",
-    "subtitle": "We bring a full-scale standing wave to your villa, set it up in the morning and take it away at dusk. You ride. We handle everything else",
+    "subtitle": "We bring a full-scale standing wave to your villa, set up before your booking time. You ride. We handle everything else",
     "primaryCta": "Book Your Wave",
     "secondaryCta": "See how it works",
     "posterAlt": "A rider carving across a standing wave at a private villa",
     "stats": {
-      "hoursValue": "10h",
-      "hoursLabel": "On site, sunrise to dusk",
+      "hoursValue": "7h",
+      "hoursLabel": "A day booking is 7 hours",
       "speedValue": "45 km/h",
-      "speedLabel": "Adjustable water speed",
-      "crewValue": "2",
-      "crewLabel": "Certified lifeguards"
+      "speedLabel": "Adjustable water speed"
     }
   },
   "howItWorks": {

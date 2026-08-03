@@ -13,8 +13,23 @@ import { HeroMedia } from "./HeroMedia";
 const STATS = [
   { value: "stats.hoursValue", label: "stats.hoursLabel" },
   { value: "stats.speedValue", label: "stats.speedLabel" },
-  { value: "stats.crewValue", label: "stats.crewLabel" },
 ] as const;
+
+/**
+ * Column count, keyed off STATS so the two cannot drift.
+ *
+ * `grid-cols-3` used to be hardcoded, so dropping a stat would have left a
+ * third of the row empty — the remaining two pinned left with a gap where the
+ * third used to be, which reads as a rendering fault rather than a design. A
+ * template literal is no use here: Tailwind scans for complete class names, so
+ * `grid-cols-${n}` produces nothing at all.
+ */
+const STAT_COLUMNS: Record<number, string> = {
+  1: "grid-cols-1",
+  2: "grid-cols-2",
+  3: "grid-cols-3",
+  4: "grid-cols-4",
+};
 
 /**
  * Path to the looping hero clip. Empty until the real footage is supplied —
@@ -130,7 +145,12 @@ export function Hero() {
 
           {/* Stat row: a real 3-column grid, so the columns stay aligned
               instead of wrapping unevenly the way a flex row would. */}
-          <dl className="mt-10 grid grid-cols-3 gap-x-3 gap-y-2 border-t border-white/15 pt-6">
+          <dl
+            className={[
+              "mt-10 grid gap-x-3 gap-y-2 border-t border-white/15 pt-6",
+              STAT_COLUMNS[STATS.length] ?? "grid-cols-2",
+            ].join(" ")}
+          >
             {STATS.map((stat) => (
               <div key={stat.value} className="min-w-0">
                 <dt className="sr-only">{t(stat.label)}</dt>
