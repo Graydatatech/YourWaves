@@ -208,9 +208,8 @@
     },
     "location": {
       "addressLabel": "Villa address",
-      "addressHint": "Building or villa number, street and compound if there is one.",
-      "addressPlaceholder": "Villa 14, Street 850, Al Wakrah",
-      "addressError": "Please give us enough of the address to find you.",
+      "addressHint": "Building, street and zone number — as they appear on your villa's blue plate.",
+      "addressError": "Fill in all three numbers so the crew can find you.",
       "areaLabel": "Area",
       "pinLabel": "Exact spot (optional)",
       "pickOnMap": "Pick on map",
@@ -231,7 +230,13 @@
       "mapsUrlHint": "Share the location from Google Maps and paste the link here.",
       "mapsUrlError": "That does not look like a Google Maps link.",
       "notesLabel": "Anything we should know? (optional)",
-      "notesPlaceholder": "Gate code, best entrance, parking notes…"
+      "notesPlaceholder": "Gate code, best entrance, parking notes…",
+      "buildingLabel": "Building No.",
+      "streetLabel": "Street No.",
+      "zoneLabel": "Zone No.",
+      "buildingPlaceholder": "12",
+      "streetPlaceholder": "850",
+      "zonePlaceholder": "55"
     },
     "details": {
       "nameLabel": "Full name",
@@ -288,7 +293,10 @@
       "needVerification": "Verify your mobile number to continue.",
       "phoneNotVerified": "Your number needs verifying again. Please request a new code.",
       "needTerms": "Please agree to the terms and conditions",
-      "needEmail": "Please enter your email address"
+      "needEmail": "Please enter your email address",
+      "needBuilding": "Enter the building number to continue.",
+      "needStreet": "Enter the street number to continue.",
+      "needZone": "Enter the zone number to continue."
     },
     "otp": {
       "intro": "We will send a 4-digit code to this number on WhatsApp.",

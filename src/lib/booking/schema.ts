@@ -128,6 +128,50 @@ export const bookingDraftSchema = z.object({
     .transform((v) => (v === "" ? undefined : v))
     .optional(),
 
+  /**
+   * The Qatari address, as three parts.
+   *
+   * Kept loose on purpose — 1 to 10 characters, any content. Building numbers
+   * carry letters in parts of Doha ("12A"), compounds number their own units,
+   * and a customer who cannot make their real address fit the validator
+   * abandons the booking rather than reporting the rule. The crew phones ahead
+   * anyway; the fields exist to stop a free-text line arriving as "my villa".
+   */
+  buildingNo: z
+    .string()
+    .trim()
+    .min(1, { message: "building_required" })
+    .max(10, { message: "address_too_long" }),
+  streetNo: z
+    .string()
+    .trim()
+    .min(1, { message: "street_required" })
+    .max(10, { message: "address_too_long" }),
+  zoneNo: z
+    .string()
+    .trim()
+    .min(1, { message: "zone_required" })
+    .max(10, { message: "address_too_long" }),
+
+  /**
+   * The composed, human-readable line — "Building 12, Street 850, Zone 55".
+   *
+   * DERIVED from the three fields above, not typed. It stays because it is what
+   * twenty-one modules read: the confirmation email, the driver's job sheet,
+   * the maps query, the .ics LOCATION, the admin table, and the
+   * `p_address_line` parameter of create_booking_hold(). Replacing the column
+   * would mean changing the signature of the project's highest-risk SQL for a
+   * presentational gain, and would leave every booking taken before today
+   * unreadable by the same code path.
+   *
+   * The server RECOMPOSES it from the three parts and ignores what the client
+   * sent, so a hand-written POST cannot put one address in the structured
+   * fields and a different one on the line the driver actually reads.
+   *
+   * Composed in English regardless of the customer's locale, for the same
+   * reason `area` stores the English name: the label follows the reader, the
+   * value the crew acts on does not.
+   */
   addressLine: z
     .string()
     .trim()
@@ -222,7 +266,25 @@ export const bookingRequestSchema = bookingDraftSchema.superRefine(
       });
     }
   },
-);
+  /**
+   * Recompose the address line from the three structured parts, discarding
+   * whatever the client sent.
+   *
+   * §4c: the server never trusts the client. Without this a hand-written POST
+   * could put one address in buildingNo/streetNo/zoneNo — which is what the
+   * back office and any future query read — and a different one on
+   * `addressLine`, which is what the confirmation email, the .ics and the
+   * driver's job sheet read. The customer would be shown one address and the
+   * crew sent to another, with both values internally consistent enough that
+   * nothing would flag it.
+   *
+   * Placed here rather than in each route so /api/bookings and
+   * /api/bookings/hold cannot drift: both parse through this schema.
+   */
+).transform((value) => ({
+  ...value,
+  addressLine: composeAddress(value) ?? value.addressLine,
+}));
 
 /**
  * Reasons a step is not yet satisfiable.
@@ -231,10 +293,32 @@ export const bookingRequestSchema = bookingDraftSchema.superRefine(
  * `booking.errors.*` — keeping them identical means a new reason cannot be
  * added without a translation, since next-intl's typed keys would reject it.
  */
+/**
+ * The three parts as one line, or null while any is missing.
+ *
+ * One function, called by the wizard on every keystroke and by both server
+ * routes before writing — so what the customer reads back on the success page
+ * is character-for-character what the driver is sent.
+ */
+export function composeAddress(parts: {
+  buildingNo?: string | null;
+  streetNo?: string | null;
+  zoneNo?: string | null;
+}): string | null {
+  const building = (parts.buildingNo ?? "").trim();
+  const street = (parts.streetNo ?? "").trim();
+  const zone = (parts.zoneNo ?? "").trim();
+  if (building === "" || street === "" || zone === "") return null;
+  return `Building ${building}, Street ${street}, Zone ${zone}`;
+}
+
 export type StepError =
   | "needDate"
   | "needTime"
   | "needAddress"
+  | "needBuilding"
+  | "needStreet"
+  | "needZone"
   | "invalidMapsUrl"
   | "needName"
   | "invalidPhone"
@@ -256,8 +340,18 @@ export const stepValidators: Record<
   time: (draft) => (draft.preferredStart ? null : "needTime"),
 
   location: (draft) => {
-    const address = (draft.addressLine ?? "").trim();
-    if (address.length < MIN_ADDRESS_LENGTH) return "needAddress";
+    // One error per field rather than a single "needAddress", so the message
+    // names the box that is empty. With three inputs on one row, "enter your
+    // address" leaves the customer checking all of them.
+    if ((draft.buildingNo ?? "").trim() === "") return "needBuilding";
+    if ((draft.streetNo ?? "").trim() === "") return "needStreet";
+    if ((draft.zoneNo ?? "").trim() === "") return "needZone";
+    // Belt and braces: composeAddress is what the wizard writes, so this can
+    // only fail for a draft restored from sessionStorage before the three
+    // fields existed. Sending them back to the step is the right answer.
+    if ((draft.addressLine ?? "").trim().length < MIN_ADDRESS_LENGTH) {
+      return "needAddress";
+    }
     if (draft.mapsUrl && !isMapsUrl(draft.mapsUrl)) return "invalidMapsUrl";
     return null;
   },

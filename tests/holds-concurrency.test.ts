@@ -358,7 +358,10 @@ describe("holds: the TypeScript mapping layer", () => {
       customerPhone: phoneFor(1),
       dialCode: "+974",
       phoneNational: "55000001",
-      addressLine: "Villa 14, Street 850, Al Wakrah",
+      buildingNo: "14",
+      streetNo: "850",
+      zoneNo: "55",
+      addressLine: "Building 14, Street 850, Zone 55",
       locale: "en",
     });
 
@@ -389,7 +392,10 @@ describe("holds: the TypeScript mapping layer", () => {
       customerName: "First",
       dialCode: "+974",
       phoneNational: "55000001",
-      addressLine: "Villa 14, Street 850, Al Wakrah",
+      buildingNo: "14",
+      streetNo: "850",
+      zoneNo: "55",
+      addressLine: "Building 14, Street 850, Zone 55",
       locale: "en" as const,
     };
 
@@ -413,7 +419,10 @@ describe("holds: the TypeScript mapping layer", () => {
       customerPhone: phoneFor(7),
       dialCode: "+974",
       phoneNational: "55000007",
-      addressLine: "Villa 7, Street 850, Al Wakrah",
+      buildingNo: "7",
+      streetNo: "850",
+      zoneNo: "55",
+      addressLine: "Building 7, Street 850, Zone 55",
       locale: "ar",
     });
     expect(created.ok).toBe(true);

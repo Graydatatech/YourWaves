@@ -235,26 +235,34 @@ for (const locale of ["ar", "en"]) {
     });
 
     // Advance to step 3 and type an address.
-    const ADDRESS = "Villa 14, Street 850, Al Wakrah";
-    await page.evaluate(async (address) => {
+    // The address is three numbered fields now; this is what they compose to.
+    const ADDRESS_PARTS = { building: "14", street: "850", zone: "55" };
+    const ADDRESS = "Building 14, Street 850, Zone 55";
+    await page.evaluate(async (parts) => {
       const next = [...document.querySelectorAll("#booking button")].find((b) =>
         /next/i.test(b.textContent ?? ""),
       );
       next?.click();
       await new Promise((r) => setTimeout(r, 300));
-      const input = document.querySelector(
-        '#booking input[autocomplete="street-address"]',
-      );
-      if (input) {
-        const setter = Object.getOwnPropertyDescriptor(
-          window.HTMLInputElement.prototype,
-          "value",
-        ).set;
-        setter.call(input, address);
-        input.dispatchEvent(new Event("input", { bubbles: true }));
+      const setter = Object.getOwnPropertyDescriptor(
+        window.HTMLInputElement.prototype,
+        "value",
+      ).set;
+      // Each part into its own box. React tracks the DOM value node, so the
+      // native setter plus a bubbled `input` is what makes it see the change —
+      // assigning .value directly is swallowed.
+      for (const [part, value] of Object.entries(parts)) {
+        const input = document.querySelector(
+          `#booking input[data-address-part="${part}"]`,
+        );
+        if (input) {
+          setter.call(input, value);
+          input.dispatchEvent(new Event("input", { bubbles: true }));
+          await new Promise((r) => setTimeout(r, 60));
+        }
       }
       await new Promise((r) => setTimeout(r, 300));
-    }, ADDRESS);
+    }, ADDRESS_PARTS);
 
     const before = await page.evaluate(() => {
       const raw = sessionStorage.getItem("yourwaves.booking.draft.v1");
@@ -273,7 +281,7 @@ for (const locale of ["ar", "en"]) {
     // The wizard restores the step the user was on — step 3 has no calendar,
     // so wait for the address field rather than the grid.
     await page.waitForSelector(
-      '#booking input[autocomplete="street-address"]',
+      '#booking input[data-address-part="building"]',
       { timeout: 60000 },
     );
     await new Promise((r) => setTimeout(r, 600));
@@ -281,12 +289,18 @@ for (const locale of ["ar", "en"]) {
     const after = await page.evaluate(() => {
       const raw = sessionStorage.getItem("yourwaves.booking.draft.v1");
       const parsed = raw ? JSON.parse(raw) : null;
-      const addressInput = document.querySelector(
-        '#booking input[autocomplete="street-address"]',
-      );
+      const read = (part) =>
+        document.querySelector(`#booking input[data-address-part="${part}"]`)
+          ?.value ?? null;
       return {
         stored: parsed,
-        renderedAddress: addressInput ? addressInput.value : null,
+        // Recomposed from what is actually painted in the three boxes, so this
+        // proves the FIELDS rehydrated — not merely that sessionStorage still
+        // holds the composed line.
+        renderedAddress:
+          read("building") && read("street") && read("zone")
+            ? `Building ${read("building")}, Street ${read("street")}, Zone ${read("zone")}`
+            : null,
         dir: document.documentElement.getAttribute("dir"),
       };
     });

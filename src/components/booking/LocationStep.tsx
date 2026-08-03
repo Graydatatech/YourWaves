@@ -5,7 +5,7 @@ import dynamic from "next/dynamic";
 import { useTranslations } from "next-intl";
 import { cn } from "@/lib/cn";
 import { Input, Label, Pill } from "@/components/ui";
-import { isMapsUrl } from "@/lib/booking/schema";
+import { composeAddress, isMapsUrl } from "@/lib/booking/schema";
 import { BOOKING_FORM } from "@/lib/booking/formConfig";
 import { areaLabel, type ServiceArea } from "@/lib/booking/serviceArea";
 import { isMapsConfigured } from "@/lib/booking/googleMaps";
@@ -64,15 +64,41 @@ export function LocationStep({
   const [mapEverOpened, setMapEverOpened] = useState(false);
   const [geo, setGeo] = useState<GeoState>("idle");
 
+  const buildingId = useId();
+  const streetId = useId();
+  const zoneId = useId();
   const addressId = useId();
   const mapsUrlId = useId();
   const notesId = useId();
   const addressErrorId = `${addressId}-error`;
   const mapsUrlErrorId = `${mapsUrlId}-error`;
 
+  const building = draft.buildingNo ?? "";
+  const street = draft.streetNo ?? "";
+  const zone = draft.zoneNo ?? "";
   const address = draft.addressLine ?? "";
   const mapsUrl = draft.mapsUrl ?? "";
-  const addressTooShort = address.trim().length < 10;
+  const buildingMissing = building.trim() === "";
+  const streetMissing = street.trim() === "";
+  const zoneMissing = zone.trim() === "";
+  const addressIncomplete = buildingMissing || streetMissing || zoneMissing;
+
+  /**
+   * Writes the edited part AND the composed line in ONE patch.
+   *
+   * Two patches would mean two renders and, worse, a window where the draft
+   * held a building number that the address line did not yet mention — and the
+   * draft is persisted to sessionStorage on change, so a customer who closed
+   * the tab in that window would restore an inconsistent one.
+   */
+  function patchAddress(part: {
+    buildingNo?: string;
+    streetNo?: string;
+    zoneNo?: string;
+  }) {
+    const next = { buildingNo: building, streetNo: street, zoneNo: zone, ...part };
+    patch({ ...part, addressLine: composeAddress(next) ?? "" });
+  }
   const mapsUrlInvalid = mapsUrl.trim() !== "" && !isMapsUrl(mapsUrl);
 
   const mapsAvailable = isMapsConfigured();
@@ -100,10 +126,10 @@ export function LocationStep({
     patch({
       lat: Number(picked.lat.toFixed(6)),
       lng: Number(picked.lng.toFixed(6)),
-      // Only fill the address if the customer has not written their own.
-      ...(picked.address && address.trim() === ""
-        ? { addressLine: picked.address }
-        : {}),
+      // The address is composed from three numbered fields now, and a place
+      // name from Google does not decompose into them. The pin is still worth
+      // having — it is what the driver navigates to — so it is kept and the
+      // typed address is left alone rather than overwritten with prose.
     });
   }
 
@@ -111,33 +137,117 @@ export function LocationStep({
 
   return (
     <div className="space-y-6">
-      {/* Address ---------------------------------------------------------- */}
+      {/* Address ----------------------------------------------------------
+          Three numbered fields, which is how a Qatari address is actually
+          given: building, street, zone. A single free-text line collected
+          "my villa next to the mosque" often enough that the crew had to phone
+          for directions on the day.
+
+          One row of three at every width. They are short numeric fields, so
+          they fit side by side even at 320px, and stacking them would push the
+          rest of the step below the fold on a phone — the layout §1 exists to
+          prevent. `min-w-0` lets the columns actually shrink: a grid track is
+          `auto` by default, which refuses to go below the input's intrinsic
+          width and overflows the page instead. */}
       <div>
-        <Label htmlFor={addressId} required>
+        <Label htmlFor={buildingId} required>
           {t("addressLabel")}
         </Label>
         <p className="text-muted-2 mt-1 mb-2 text-sm">{t("addressHint")}</p>
-        <Input
-          id={addressId}
-          value={address}
-          onChange={(event) => patch({ addressLine: event.target.value })}
-          placeholder={t("addressPlaceholder")}
-          autoComplete="street-address"
-          invalid={showErrors && addressTooShort}
-          aria-describedby={
-            showErrors && addressTooShort ? addressErrorId : undefined
-          }
-        />
-        {/* aria-live so the message is announced when it appears, not only
-            discovered by a user who happens to navigate back to the field. */}
+
+        <div className="grid grid-cols-3 gap-2">
+          {(
+            [
+              {
+                id: buildingId,
+                part: "building",
+                value: building,
+                missing: buildingMissing,
+                label: t("buildingLabel"),
+                placeholder: t("buildingPlaceholder"),
+                onChange: (v: string) => patchAddress({ buildingNo: v }),
+              },
+              {
+                id: streetId,
+                part: "street",
+                value: street,
+                missing: streetMissing,
+                label: t("streetLabel"),
+                placeholder: t("streetPlaceholder"),
+                onChange: (v: string) => patchAddress({ streetNo: v }),
+              },
+              {
+                id: zoneId,
+                part: "zone",
+                value: zone,
+                missing: zoneMissing,
+                label: t("zoneLabel"),
+                placeholder: t("zonePlaceholder"),
+                onChange: (v: string) => patchAddress({ zoneNo: v }),
+              },
+            ] as const
+          ).map((field) => (
+            <div key={field.id} className="min-w-0">
+              <label
+                htmlFor={field.id}
+                className="text-muted mb-1 block text-xs font-semibold"
+              >
+                {field.label}
+              </label>
+              <Input
+                id={field.id}
+                // A stable hook for pnpm check:booking, which has to find these
+                // in a real browser. Autofill is OFF: no standard token means
+                // "zone number", and a browser filling "12 Main Street" into a
+                // ten-character box is worse help than none.
+                data-address-part={field.part}
+                autoComplete="off"
+                // numeric keypad, but type stays text: a number input strips
+                // the leading zeros and letters that real building numbers
+                // carry, silently, after the customer has typed them.
+                inputMode="numeric"
+                type="text"
+                dir="ltr"
+                maxLength={10}
+                // Short numeric values in a narrow column read better centred,
+                // and it is the only alignment class here — `cn` is a plain
+                // joiner with no tailwind-merge, so anything that collided with
+                // the primitive's own padding would resolve unpredictably.
+                className="text-center"
+                value={field.value}
+                onChange={(event) => field.onChange(event.target.value)}
+                placeholder={field.placeholder}
+                invalid={showErrors && field.missing}
+                aria-describedby={
+                  showErrors && addressIncomplete ? addressErrorId : undefined
+                }
+              />
+            </div>
+          ))}
+        </div>
+
+        {/* One message for the row, not three stacked under three boxes —
+            each invalid field is already outlined. aria-live so it is
+            announced when it appears, not only found by a user who happens
+            to navigate back. */}
         <p
           id={addressErrorId}
           role="alert"
           aria-live="polite"
           className="text-sm font-semibold text-danger empty:hidden"
         >
-          {showErrors && addressTooShort ? t("addressError") : ""}
+          {showErrors && addressIncomplete ? t("addressError") : ""}
         </p>
+
+        {/* What the driver will be sent, echoed back. The composed line is
+            what every downstream reader gets, so showing it here is the only
+            place a customer can catch a transposed number before it is on a
+            job sheet. */}
+        {!addressIncomplete && (
+          <p className="text-muted-2 pt-1 text-sm" dir="ltr">
+            {address}
+          </p>
+        )}
       </div>
 
       {/* Area quick-picks -------------------------------------------------- */}

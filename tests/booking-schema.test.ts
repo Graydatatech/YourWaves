@@ -17,7 +17,10 @@ const VALID = {
   dialCode: "+974",
   phoneNational: "55123456",
   customerEmail: "noora@example.com",
-  addressLine: "Villa 14, Street 850, Al Wakrah",
+  buildingNo: "14",
+  streetNo: "850",
+  zoneNo: "55",
+  addressLine: "Building 14, Street 850, Zone 55",
   area: "Al Wakrah",
   city: "Doha",
   mapsUrl: "https://maps.app.goo.gl/abc123",
@@ -88,11 +91,19 @@ describe("step validators", () => {
     expect(stepValidators.time({})).toBe("needTime");
     expect(stepValidators.time({ preferredStart: "08:00:00" })).toBeNull();
 
-    expect(stepValidators.location({ addressLine: "short" })).toBe(
-      "needAddress",
-    );
+    // One error per box, so the message can name the field that is empty.
+    expect(stepValidators.location({})).toBe("needBuilding");
+    expect(stepValidators.location({ buildingNo: "14" })).toBe("needStreet");
     expect(
-      stepValidators.location({ addressLine: VALID.addressLine }),
+      stepValidators.location({ buildingNo: "14", streetNo: "850" }),
+    ).toBe("needZone");
+    expect(
+      stepValidators.location({
+        buildingNo: VALID.buildingNo,
+        streetNo: VALID.streetNo,
+        zoneNo: VALID.zoneNo,
+        addressLine: VALID.addressLine,
+      }),
     ).toBeNull();
 
     expect(stepValidators.details({})).toBe("needName");
@@ -212,12 +223,32 @@ describe("bookingRequestSchema", () => {
     }
   });
 
-  it("rejects an address that is too short to find", () => {
+  it("rejects an address missing any of its three parts", () => {
+    for (const part of ["buildingNo", "streetNo", "zoneNo"] as const) {
+      const result = bookingRequestSchema.safeParse({ ...VALID, [part]: "" });
+      expect(result.success, `${part} empty should be refused`).toBe(false);
+    }
+  });
+
+  it("recomposes the address line and ignores the one sent", () => {
+    /**
+     * §4c, the server never trusts the client. A hand-written POST that puts
+     * one address in the structured fields and another on the line would show
+     * the customer one address and send the crew to a different one.
+     */
     const result = bookingRequestSchema.safeParse({
       ...VALID,
-      addressLine: "Villa 1",
+      buildingNo: "12",
+      streetNo: "850",
+      zoneNo: "55",
+      addressLine: "Somewhere else entirely, ignore the numbers",
     });
-    expect(result.success).toBe(false);
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.addressLine).toBe(
+        "Building 12, Street 850, Zone 55",
+      );
+    }
   });
 });
 
