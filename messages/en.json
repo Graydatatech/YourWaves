@@ -381,7 +381,7 @@
         "space": "Clear a flat 5 × 10 metre area with vehicle access — grass, tile or poolside decking all work.",
         "power": "Nothing needed from you: the unit brings its own silent generator.",
         "water": "The unit arrives filled. We will not draw from or drain into your pool.",
-        "arrival": "Our crew arrives about ninety minutes before your start time to set up and run the safety check."
+        "arrival": "Our crew will arrive several hours before your booking time to set up, prepare and run the safety check."
       }
     }
   },
@@ -427,7 +427,7 @@
       "space": "Clear a flat 5 × 10 metre area with vehicle access — grass, tile or poolside decking all work.",
       "power": "Nothing needed from you: the unit brings its own silent generator.",
       "water": "The unit arrives filled. We will not draw from or drain into your pool.",
-      "arrival": "Our crew arrives about ninety minutes before your start time to set up and run the safety check.",
+      "arrival": "Our crew will arrive several hours before your booking time to set up, prepare and run the safety check.",
       "swimwear": "Have swimwear and towels ready — riders start as soon as the safety briefing is done."
     },
     "bookingConfirmed": {
