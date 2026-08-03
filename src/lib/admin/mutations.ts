@@ -710,3 +710,54 @@ export async function revokeAdminUser(
 
   return removed.length > 0 ? { ok: true } : { ok: false, code: "not_found" };
 }
+
+// ---------------------------------------------------------------------------
+// Reviews
+// ---------------------------------------------------------------------------
+
+/**
+ * Publish or unpublish a survey answer.
+ *
+ * Through `asUser`, so the RLS policy from 0018 decides — unlike the booking
+ * writes, this needs no SQL function holding an invariant, and the policy is
+ * the whole authorisation question.
+ *
+ * The CHECK constraint on the table refuses to publish anything unanswered, so
+ * a hand-written request cannot put an empty card on the home page even if this
+ * function were called with the wrong id.
+ */
+export async function setReviewPublished(
+  session: AdminSession,
+  reviewId: string,
+  publish: boolean,
+): Promise<{ ok: boolean }> {
+  const rows = await asUser(session.userId, async (tx) => {
+    return tx<{ id: string }[]>`
+      UPDATE reviews
+         SET is_published = ${publish},
+             published_at = ${publish ? sql`now()` : sql`NULL`}
+       WHERE id = ${reviewId}::uuid
+      RETURNING id
+    `;
+  });
+  return { ok: rows.length > 0 };
+}
+
+/**
+ * Delete a survey answer outright.
+ *
+ * For the case moderation exists to handle: something abusive, or a comment a
+ * customer asks to have removed. The booking is untouched — this is their
+ * words, not the record of their day.
+ */
+export async function deleteReview(
+  session: AdminSession,
+  reviewId: string,
+): Promise<{ ok: boolean }> {
+  const rows = await asUser(session.userId, async (tx) => {
+    return tx<{ id: string }[]>`
+      DELETE FROM reviews WHERE id = ${reviewId}::uuid RETURNING id
+    `;
+  });
+  return { ok: rows.length > 0 };
+}

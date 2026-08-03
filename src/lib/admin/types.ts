@@ -49,6 +49,26 @@ export type GalleryImage = {
   altAr: string;
 };
 
+/**
+ * A customer's survey answer, as the back office sees it.
+ *
+ * Includes the booking reference so an admin can tell which day a comment is
+ * about — a five-star review of a day the crew arrived late is worth reading
+ * differently from one where everything went right.
+ */
+export type ReviewRow = {
+  id: string;
+  reference: string;
+  bookingDate: string;
+  rating: number | null;
+  comment: string | null;
+  authorName: string | null;
+  authorArea: string | null;
+  submittedAt: string | null;
+  isPublished: boolean;
+  createdAt: string;
+};
+
 export type FooterContent = {
   taglineEn?: string;
   taglineAr?: string;

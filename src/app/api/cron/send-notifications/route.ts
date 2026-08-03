@@ -1,4 +1,5 @@
 import { runNotificationWorker } from "@/lib/notifications/worker";
+import { enqueueDueSurveys } from "@/lib/reviews/service";
 
 const NO_STORE = { "Cache-Control": "no-store" } as const;
 
@@ -40,8 +41,35 @@ export async function POST(request: Request) {
   const batchSize = Number(url.searchParams.get("batchSize")) || undefined;
 
   try {
+    /**
+     * Queue any surveys that came due, then drain.
+     *
+     * Folded into this minute-by-minute job rather than given a schedule of
+     * its own, because it is idempotent twice over: `reviews.booking_id` is
+     * unique, so a second run inserts nothing, and `notifications` is unique
+     * on (booking_id, template_key, recipient), so even a lost review row
+     * could not produce a second email. Running it 1,440 times a day costs one
+     * indexed query per minute and removes a whole scheduler from the setup
+     * anyone has to get right.
+     *
+     * A failure here must not stop the drain: a survey that waits a minute is
+     * nothing, a confirmation that waits is the customer wondering whether
+     * they have booked.
+     */
+    let surveysQueued = 0;
+    try {
+      surveysQueued = await enqueueDueSurveys();
+    } catch (error) {
+      console.error("[cron/send-notifications] survey enqueue failed", {
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+
     const result = await runNotificationWorker({ batchSize });
-    return Response.json({ ok: true, ...result }, { headers: NO_STORE });
+    return Response.json(
+      { ok: true, surveysQueued, ...result },
+      { headers: NO_STORE },
+    );
   } catch (error) {
     // A fault in the worker itself (database down, provider misconfigured).
     // Individual send failures never reach here — they are recorded on the row.

@@ -62,6 +62,7 @@ const API_GETS = [
   "/api/admin/payments",
   // The admin roster. An unauthenticated caller must not learn who has access.
   "/api/admin/admins",
+  "/api/admin/reviews",
 ];
 
 const API_WRITES = [
@@ -112,6 +113,9 @@ const API_WRITES = [
   // Uploading to the public gallery bucket. Unauthenticated access here would
   // let anyone put arbitrary images on the marketing site.
   ["DELETE", "/api/admin/gallery?path=00000000-0000-4000-8000-000000000000.jpg", null],
+  // Publishing a comment puts text on the public home page.
+  ["PATCH", "/api/admin/reviews/00000000-0000-4000-8000-000000000000", { isPublished: true }],
+  ["DELETE", "/api/admin/reviews/00000000-0000-4000-8000-000000000000", null],
   ["POST", "/api/admin/admins", { email: "intruder@example.com" }],
   ["DELETE", "/api/admin/admins/00000000-0000-4000-8000-000000000000", null],
 ];

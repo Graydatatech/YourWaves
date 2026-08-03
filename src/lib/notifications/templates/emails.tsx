@@ -487,3 +487,52 @@ export function AdminNotificationFailedEmail(
     </Frame>
   );
 }
+
+/**
+ * The post-activity survey.
+ *
+ * Sent the day after, and deliberately short: it asks one thing, and the only
+ * decision on the page is whether to tap the button. A long email asking for
+ * feedback is an email nobody finishes.
+ *
+ * The link carries the review token from the payload. §4g freezes the payload
+ * at enqueue time, so a message sent after a retry carries the same token it
+ * was minted with rather than one generated later.
+ */
+export function BookingSurveyEmail(ctx: TemplateContext): ReactElement {
+  const { t, dir, payload } = ctx;
+
+  const token =
+    typeof payload.review_token === "string" ? payload.review_token : "";
+  const origin = (
+    process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"
+  ).replace(/\/+$/, "");
+  const href = `${origin}/r/${token}`;
+
+  return (
+    <Frame ctx={ctx} preheader={t("bookingSurvey.preheader")}>
+      <Block dir={dir}>
+        <Heading dir={dir}>{t("bookingSurvey.heading")}</Heading>
+        <Paragraph dir={dir} muted>
+          {t("bookingSurvey.intro", { name: ctx.customerName })}
+        </Paragraph>
+      </Block>
+
+      <Block dir={dir} paddingTop={8}>
+        <ReferenceBadge label={t("common.reference")} value={ctx.reference} />
+      </Block>
+
+      <Block dir={dir} paddingTop={20}>
+        <EmailButton href={href}>
+          {t("bookingSurvey.cta")}
+        </EmailButton>
+      </Block>
+
+      <Block dir={dir} paddingTop={16}>
+        <Paragraph dir={dir} muted>
+          {t("bookingSurvey.note")}
+        </Paragraph>
+      </Block>
+    </Frame>
+  );
+}

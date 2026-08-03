@@ -10,6 +10,8 @@ import { SITE_URL, hasCanonicalOrigin } from "@/lib/seo";
 //
 //   /api/          no page, no value, and some routes cost a database round trip
 //   /admin         already noindex + gated; listing it keeps it out of a crawl
+//   /r/            the post-activity survey link. Same reasoning as /d/ — the
+//                  URL is the credential and it names a booking.
 //   /d/            the dispatch job sheet. The URL IS the credential. It is
 //                  already noindex/nofollow/no-referrer, but a crawler that
 //                  followed one from a leaked chat log and cached it would put
@@ -44,6 +46,7 @@ export default function robots(): MetadataRoute.Robots {
           "/admin",
           "/admin/",
           "/d/",
+          "/r/",
           "/dev/",
           "/*/booking/",
           "/*/styleguide",

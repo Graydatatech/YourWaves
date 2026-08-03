@@ -20,7 +20,7 @@ import { cn } from "@/lib/cn";
 
 type NavItem = {
   href: string;
-  key: "overview" | "calendar" | "orders" | "settings";
+  key: "overview" | "calendar" | "orders" | "reviews" | "settings";
   icon: React.ReactNode;
 };
 
@@ -30,6 +30,13 @@ const stroke = {
   strokeWidth: 1.8,
   strokeLinecap: "round" as const,
   strokeLinejoin: "round" as const,
+};
+
+/** Tailwind needs complete class names, so a template literal is no use here. */
+const TAB_COLUMNS: Record<number, string> = {
+  3: "grid-cols-3",
+  4: "grid-cols-4",
+  5: "grid-cols-5",
 };
 
 const ITEMS: NavItem[] = [
@@ -63,6 +70,18 @@ const ITEMS: NavItem[] = [
       <svg viewBox="0 0 24 24" className="size-[22px]" aria-hidden="true">
         <rect x="3.5" y="4.5" width="17" height="15" rx="2.5" {...stroke} />
         <path d="M7.5 9h9M7.5 12.5h9M7.5 16h5" {...stroke} />
+      </svg>
+    ),
+  },
+  {
+    href: "/admin/reviews",
+    key: "reviews",
+    icon: (
+      <svg viewBox="0 0 24 24" className="size-[22px]" aria-hidden="true">
+        <path
+          d="M21 11.5a8.4 8.4 0 0 1-9 8.4 9.5 9.5 0 0 1-2.8-.4L4 21l1.6-4.2A8.2 8.2 0 0 1 4 11.5 8.4 8.4 0 0 1 12.5 3 8.4 8.4 0 0 1 21 11.5z"
+          {...stroke}
+        />
       </svg>
     ),
   },
@@ -101,7 +120,16 @@ export function AdminBottomTabs() {
         "pb-[env(safe-area-inset-bottom)]",
       )}
     >
-      <ul className="mx-auto grid max-w-2xl grid-cols-4">
+      {/* Column count from ITEMS, not a literal. §4h argued for four
+          destinations under a thumb; feedback makes five, which still clears
+          44px per tab at 320px (5 × 64px). A sixth would not, and a hardcoded
+          `grid-cols-4` would have silently wrapped rather than said so. */}
+      <ul
+        className={cn(
+          "mx-auto grid max-w-2xl",
+          TAB_COLUMNS[ITEMS.length] ?? "grid-cols-4",
+        )}
+      >
         {ITEMS.map((item) => {
           const active = isActive(pathname, item.href);
           return (

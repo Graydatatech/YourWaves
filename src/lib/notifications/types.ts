@@ -25,6 +25,8 @@ export const TEMPLATE_KEYS = [
   "booking_setup_complete",
   "booking_completed",
   "booking_cancelled",
+  // Post-activity survey — sent the day after, links to /r/<token>.
+  "booking_survey",
   // Operational alerts, from phase 6 and from this phase's own failure path
   "payment_refund_required",
   "admin_payment_refund_required",

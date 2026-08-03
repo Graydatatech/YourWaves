@@ -14,6 +14,7 @@ import {
   type CalendarDay,
   type DriverRow,
   type OrdersResult,
+  type ReviewRow,
 } from "./types";
 
 // The domain vocabulary lives in ./types.ts, which is NOT server-only: client
@@ -612,6 +613,57 @@ export async function getAdminUsers(
     isSelf: row.user_id === session.userId,
     grantedAt: row.granted_at,
   }));
+}
+
+/**
+ * Survey answers, newest reply first.
+ *
+ * Unanswered invitations are excluded — a row that exists only because an email
+ * went out is not feedback, and a moderation queue full of silence is a
+ * moderation queue nobody opens.
+ */
+export async function getReviews(session: AdminSession): Promise<ReviewRow[]> {
+  return asUser(session.userId, async (tx) => {
+    const rows = await tx<
+      {
+        id: string;
+        reference: string;
+        booking_date: string;
+        rating: number | null;
+        comment: string | null;
+        author_name: string | null;
+        author_area: string | null;
+        submitted_at: string | null;
+        is_published: boolean;
+        created_at: string;
+      }[]
+    >`
+      SELECT r.id, b.reference,
+             to_char(b.booking_date, 'YYYY-MM-DD') AS booking_date,
+             r.rating, r.comment, r.author_name, r.author_area,
+             r.submitted_at, r.is_published, r.created_at
+        FROM reviews r
+        JOIN bookings b ON b.id = r.booking_id
+       WHERE r.submitted_at IS NOT NULL
+       ORDER BY r.submitted_at DESC
+       LIMIT 200
+    `;
+
+    return rows.map((row) => ({
+      id: row.id,
+      reference: row.reference,
+      bookingDate: row.booking_date,
+      rating: row.rating,
+      comment: row.comment,
+      authorName: row.author_name,
+      authorArea: row.author_area,
+      submittedAt: row.submitted_at
+        ? new Date(row.submitted_at).toISOString()
+        : null,
+      isPublished: row.is_published,
+      createdAt: new Date(row.created_at).toISOString(),
+    }));
+  });
 }
 
 export async function getAdminSettings(

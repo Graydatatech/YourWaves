@@ -123,7 +123,8 @@
     "kicker": "Gallery",
     "title": "Recent days out",
     "description": "A few of the villas we have set up at this season.",
-    "imageAlt": "YourWaves flowrider installed at a private villa, photo {number}"
+    "imageAlt": "YourWaves flowrider installed at a private villa, photo {number}",
+    "anonymous": "A guest"
   },
   "testimonials": {
     "kicker": "What guests say",
@@ -529,6 +530,14 @@
       "whatsapp": "New job {reference}\n{date} · arrive by {arriveBy}\nCustomer: {customer} ({phone})\nArea: {area}\nPayment: {payment}\n\nJob sheet: {jobLink}\nNavigate: {mapsLink}\n\nOpen the job sheet for the full address and to update status.",
       "paid": "paid",
       "collect": "COLLECT ON SITE"
+    },
+    "bookingSurvey": {
+      "subject": "How was your day? · {reference}",
+      "preheader": "One question, thirty seconds.",
+      "heading": "How was the wave?",
+      "intro": "Hello {name} — we hope yesterday went well. If you have a moment, we would like to know how it went. It takes about thirty seconds, and it genuinely shapes what we do next.",
+      "cta": "Leave your feedback",
+      "note": "Your comment is only shown on our website if you are happy with it and we ask you first. The link works for the next thirty days."
     }
   },
   "admin": {
@@ -538,7 +547,8 @@
       "orders": "Orders",
       "settings": "Settings",
       "signOut": "Sign out",
-      "brand": "YourWaves ops"
+      "brand": "YourWaves ops",
+      "reviews": "Feedback"
     },
     "common": {
       "loading": "Loading…",
@@ -877,6 +887,22 @@
         "uploadFailed": "The upload failed. Please try again.",
         "saveFailed": "The gallery could not be saved. Please try again."
       }
+    },
+    "reviews": {
+      "title": "Guest feedback",
+      "subtitle": "Survey answers from customers, sent the day after their booking. Publish one and it appears under \"What guests say\" on the home page.",
+      "empty": "No feedback yet. Surveys go out the day after each booking.",
+      "published": "Published",
+      "unpublished": "Not published",
+      "publish": "Publish",
+      "unpublish": "Unpublish",
+      "delete": "Delete",
+      "deleteTitle": "Delete this feedback?",
+      "deleteBody": "The comment is removed permanently. The booking itself is untouched.",
+      "needsComment": "Nothing to quote — rating only.",
+      "noComment": "Rating only, no comment left.",
+      "ratingLabel": "Rated {rating} out of 5",
+      "failed": "That did not work. Please try again."
     }
   },
   "jobSheet": {
@@ -938,5 +964,28 @@
     "empty": "Our terms have not been published yet. Please contact us before booking if you have questions.",
     "englishOnly": "These terms are currently available in English only.",
     "back": "Back to home"
+  },
+  "review": {
+    "title": "How was the wave?",
+    "intro": "Hello {name} — thank you for having us. Two quick things and you are done.",
+    "ratingLabel": "How would you rate the day?",
+    "ratingOption": "{value} out of 5",
+    "ratingRequired": "Choose a rating to continue.",
+    "commentLabel": "Anything you would like to say?",
+    "commentHint": "Optional, but it is the part we read.",
+    "commentPlaceholder": "What worked, what didn't…",
+    "nameLabel": "Name to show",
+    "nameHint": "Only used if we ask you about publishing your comment.",
+    "submit": "Send",
+    "sending": "Sending…",
+    "failed": "That did not send. Please try again.",
+    "thanksTitle": "Thank you",
+    "thanksBody": "That is genuinely useful. If we would like to show your comment on our website, we will ask you first.",
+    "edit": "Change my answer",
+    "privacy": "Your rating and comment are only seen by our team unless you agree to it being published.",
+    "expiredTitle": "This link has expired",
+    "expiredBody": "Feedback links work for thirty days. If you would still like to tell us how it went, just reply to any of our emails.",
+    "invalidTitle": "This link does not work",
+    "invalidBody": "Please check the link in your email, or reply to it and we will sort it out."
   }
 }

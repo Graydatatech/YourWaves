@@ -2,6 +2,7 @@ import Image from "next/image";
 import { getLocale, getTranslations } from "next-intl/server";
 import { isLocale, routing } from "@/i18n/routing";
 import { getGallery, TILE_RATIOS } from "@/lib/site/gallery";
+import { getPublishedReviews } from "@/lib/reviews/service";
 import gallery1 from "../../../public/media/gallery-1.jpg";
 import gallery2 from "../../../public/media/gallery-2.jpg";
 import gallery3 from "../../../public/media/gallery-3.jpg";
@@ -33,6 +34,7 @@ const TILES = [
 
 export async function Gallery() {
   const t = await getTranslations("gallery");
+  const tTestimonials = await getTranslations("testimonials");
 
   const rawLocale = await getLocale();
   const locale = isLocale(rawLocale) ? rawLocale : routing.defaultLocale;
@@ -43,6 +45,31 @@ export async function Gallery() {
    * build-time blur placeholders and content-hashed URLs — an uploaded image
    * can have neither, which is the honest trade for being editable.
    */
+  /**
+   * Published customer reviews if there are any, the three designed examples
+   * otherwise. Fetched here because Testimonials is a Client Component — it
+   * owns a scroll-snap carousel and an IntersectionObserver — so it cannot read
+   * the database itself, and turning it into a server component would mean
+   * hydrating the carousel separately for no gain.
+   */
+  const reviews = await getPublishedReviews(6);
+  const testimonials =
+    reviews.length > 0
+      ? reviews.map((review) => ({
+          id: review.id,
+          quote: review.comment,
+          name: review.authorName || t("anonymous"),
+          role: review.authorArea ?? "",
+          rating: review.rating,
+        }))
+      : (["one", "two", "three"] as const).map((key) => ({
+          id: key,
+          quote: tTestimonials(`items.${key}.quote`),
+          name: tTestimonials(`items.${key}.name`),
+          role: tTestimonials(`items.${key}.role`),
+          rating: 5,
+        }));
+
   const tiles = await getGallery(
     locale,
     TILES.map((tile, index) => ({
@@ -99,7 +126,7 @@ export async function Gallery() {
         </div>
       </div>
 
-      <Testimonials />
+      <Testimonials items={testimonials} />
     </section>
   );
 }

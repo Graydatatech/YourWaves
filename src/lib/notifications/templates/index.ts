@@ -9,6 +9,7 @@ import {
   DriverAssignmentEmail,
   StatusUpdateEmail,
   type StatusKey,
+  BookingSurveyEmail,
 } from "./emails";
 import type { TemplateContext } from "./context";
 import type { NotificationLocale, TemplateKey } from "../types";
@@ -149,6 +150,20 @@ export const TEMPLATES: Record<TemplateKey, TemplateDefinition> = {
       render: BookingConfirmedEmail,
     },
     whatsapp: whatsapp("yw_booking_confirmed"),
+  },
+
+  // --- Post-activity survey -----------------------------------------------
+  //
+  // Email only. WhatsApp would need another Meta template approved, and none
+  // are yet — see docs/whatsapp-templates.md. Nothing here depends on the
+  // channel, so adding it later is one line.
+  booking_survey: {
+    audience: "customer",
+    email: {
+      subjectKey: "bookingSurvey.subject",
+      subjectValues: (ctx) => ({ reference: ctx.reference }),
+      render: BookingSurveyEmail,
+    },
   },
 
   // --- SRS 3.4.2 — new booking alert --------------------------------------

@@ -5,10 +5,19 @@ import { useTranslations } from "next-intl";
 import { cn } from "@/lib/cn";
 import { SectionIntro } from "./SectionIntro";
 
-const ITEMS = ["one", "two", "three"] as const;
-const RATING = 5;
+/**
+ * A card. Either a published customer review or, when there are none, one of
+ * the three designed examples from the catalogue.
+ */
+export type Testimonial = {
+  id: string;
+  quote: string;
+  name: string;
+  role: string;
+  rating: number;
+};
 
-function Stars({ label }: { label: string }) {
+function Stars({ label, rating }: { label: string; rating: number }) {
   return (
     <div
       className="flex items-center gap-0.5"
@@ -17,12 +26,16 @@ function Stars({ label }: { label: string }) {
       // The row is a single labelled image; the glyphs are decorative.
       dir="ltr"
     >
-      {Array.from({ length: RATING }, (_, i) => (
+      {Array.from({ length: 5 }, (_, i) => (
         <svg
           key={i}
           aria-hidden="true"
           viewBox="0 0 20 20"
-          className="text-accent size-4 fill-current"
+          className={
+            i < rating
+              ? "text-accent size-4 fill-current"
+              : "text-ink/15 size-4 fill-current"
+          }
         >
           <path d="M10 1.6l2.47 5.01 5.53.8-4 3.9.94 5.5L10 14.2l-4.94 2.6.94-5.5-4-3.9 5.53-.8z" />
         </svg>
@@ -40,7 +53,7 @@ function Stars({ label }: { label: string }) {
  * IntersectionObserver rather than a scroll handler, so there is no per-frame
  * work) and are also controls: activating one scrolls to that card.
  */
-export function Testimonials() {
+export function Testimonials({ items }: { items: Testimonial[] }) {
   const t = useTranslations("testimonials");
   const scrollerRef = useRef<HTMLUListElement>(null);
   const [active, setActive] = useState(0);
@@ -89,19 +102,22 @@ export function Testimonials() {
           "md:grid md:grid-cols-3 md:overflow-visible md:pb-0",
         )}
       >
-        {ITEMS.map((item) => (
+        {items.map((item, index) => (
           <li
-            key={item}
+            key={item.id}
             className={cn(
               "border-border bg-surface shadow-card rounded-card border p-6",
               // One card per view, minus the gutter so the next card peeks.
               "w-[86%] shrink-0 snap-start md:w-auto",
             )}
           >
-            <Stars label={t("ratingLabel", { rating: RATING })} />
+            <Stars
+              label={t("ratingLabel", { rating: item.rating })}
+              rating={item.rating}
+            />
 
             <blockquote className="text-ink mt-4 text-lg leading-relaxed font-semibold">
-              {t(`items.${item}.quote`)}
+              {item.quote}
             </blockquote>
 
             <figcaption className="mt-5 flex items-center gap-3">
@@ -111,10 +127,10 @@ export function Testimonials() {
               />
               <span className="min-w-0">
                 <span className="text-ink block truncate text-sm font-bold">
-                  {t(`items.${item}.name`)}
+                  {item.name}
                 </span>
                 <span className="text-muted-2 block truncate text-sm">
-                  {t(`items.${item}.role`)}
+                  {item.role}
                 </span>
               </span>
             </figcaption>
@@ -124,9 +140,9 @@ export function Testimonials() {
 
       {/* Dot indicators — mobile only, since the grid shows all three at md+. */}
       <div className="mt-5 flex justify-center gap-2 md:hidden">
-        {ITEMS.map((item, index) => (
+        {items.map((item, index) => (
           <button
-            key={item}
+            key={item.id}
             type="button"
             onClick={() => goTo(index)}
             aria-label={t("goToSlide", { number: index + 1 })}

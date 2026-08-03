@@ -155,14 +155,15 @@ export const config = {
    * next-intl would redirect it to /ar/api/bookings and break every customer
    * route. /api/admin/* still needs the session check, so it is matched
    * separately and dispatched by the branch above.
-   * `dev` and `d/` are excluded: /dev/emails is a locale-less developer tool,
-   * and /d/<token> is the public dispatch link, which has no locale segment and
-   * carries its own language toggle.
+   * `dev`, `d/` and `r/` are excluded: /dev/emails is a locale-less developer
+   * tool, /d/<token> is the public dispatch link and /r/<token> the survey
+   * link. Neither has a locale segment — each takes its language from the
+   * booking — so a locale rewrite would redirect a working link to a 404.
    */
   matcher: [
     // Customer API routes must NOT go through the locale rewrite, so `api` is
     // excluded here and the admin subtree is matched explicitly below.
-    "/((?!api|dev|d/|_next|_vercel|.*\\..*).*)",
+    "/((?!api|dev|d/|r/|_next|_vercel|.*\\..*).*)",
     "/api/admin/:path*",
   ],
 };
