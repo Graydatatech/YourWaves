@@ -101,7 +101,7 @@
   },
   "safety": {
     "kicker": "Safety & specifications",
-    "title": "Engineered to be boring in the ways that matter",
+    "title": "Predictable engineering for total safety",
     "description": "Every unit is inspected before it leaves our yard and again once it is standing at your villa.",
     "imageAlt": "The flowrider unit installed beside a private villa pool",
     "specs": {
@@ -162,7 +162,7 @@
     "kicker": "Booking",
     "loading": "Loading the booking form…",
     "title": "Choose your day",
-    "description": "Pick a date, tell us where to set up, and we will confirm within the hour.",
+    "description": "Pick a date and tell us where to set up.",
     "next": "Next",
     "back": "Back",
     "submit": "Review & confirm",
@@ -178,7 +178,7 @@
       "dateTitle": "Pick your day",
       "dateHelp": "One booking per day, so the wave is yours from setup to sunset.",
       "timeTitle": "What time should we set up?",
-      "timeHelp": "Our crew arrives several hours before the first rider.",
+      "timeHelp": "Our crew arrives to set up several hours before your booking time.",
       "locationTitle": "Where are we going?",
       "locationHelp": "A flat 10 × 5 metre area with vehicle access.",
       "detailsTitle": "How do we reach you?",
@@ -203,7 +203,7 @@
       "loading": "loading…"
     },
     "time": {
-      "label": "Setup time",
+      "label": "Booking time",
       "noSlots": "No start times are configured yet. Please contact us."
     },
     "location": {
@@ -264,7 +264,7 @@
     "summary": {
       "title": "Your booking",
       "date": "Date",
-      "time": "Setup time",
+      "time": "Booking time",
       "total": "Total",
       "nothingChosen": "Nothing chosen yet",
       "lines": {
@@ -278,7 +278,7 @@
     },
     "errors": {
       "needDate": "Choose an available date to continue.",
-      "needTime": "Choose a setup time to continue.",
+      "needTime": "Choose a booking time to continue.",
       "needAddress": "Enter the villa address to continue.",
       "invalidMapsUrl": "Fix or clear the Google Maps link to continue.",
       "needName": "Enter your full name to continue.",
@@ -351,7 +351,7 @@
       "DATE_PAST": "That date has already passed.",
       "DATE_TOO_SOON": "That date is too soon — we need more notice to get set up.",
       "DATE_OUT_OF_RANGE": "That date is further ahead than we are taking bookings.",
-      "INVALID_START_TIME": "That setup time is not one we offer. Please pick another.",
+      "INVALID_START_TIME": "That booking time is not one we offer. Please pick another.",
       "SETTINGS_MISSING": "Booking is temporarily unavailable. Please try again shortly.",
       "PHONE_NOT_VERIFIED": "Your number needs verifying again. Please request a new code.",
       "VALIDATION_FAILED": "Please check the highlighted fields and try again.",
@@ -377,7 +377,7 @@
       "confirmingBody": "This usually takes a few seconds. Please keep this page open — we are waiting for your bank to confirm.",
       "stillChecking": "Still checking with the payment provider…",
       "confirmedTitle": "You're booked",
-      "confirmedBody": "Your date is locked in. We have sent the details to your WhatsApp.",
+      "confirmedBody": "Your date is locked in. We have sent the details to your email.",
       "failedTitle": "Payment did not go through",
       "failedBody": "Nothing has been charged. Your date is still held for a few more minutes, so you can try again with another card.",
       "timeoutTitle": "Still waiting on your bank",
@@ -386,7 +386,7 @@
       "notFoundBody": "Please check the link, or message us with your reference.",
       "reference": "Reference",
       "date": "Date",
-      "time": "Setup time",
+      "time": "Booking time",
       "address": "Address",
       "paid": "Paid",
       "addToCalendar": "Add to calendar",
@@ -421,7 +421,7 @@
       "preheaderHint": "Booking {reference}",
       "reference": "Reference",
       "date": "Date",
-      "time": "Setup time",
+      "time": "Booking time",
       "address": "Address",
       "area": "Area",
       "customer": "Customer",
@@ -453,7 +453,7 @@
       "heading": "You're booked",
       "intro": "Thanks {name} — your date is locked in and paid in full. Here is everything for the day.",
       "summaryTitle": "Your booking",
-      "whatsapp": "Your YourWaves booking is confirmed ✅\nReference: {reference}\nDate: {date}\nSetup time: {time}\nAddress: {address}\nTotal paid: {total}\n\nOur crew arrives several hours early. Reply here if anything changes."
+      "whatsapp": "Your YourWaves booking is confirmed ✅\nReference: {reference}\nDate: {date}\nBooking time: {time}\nAddress: {address}\nTotal paid: {total}\n\nOur crew arrives several hours early. Reply here if anything changes."
     },
     "adminBookingConfirmed": {
       "subject": "New booking — {reference} on {date}",

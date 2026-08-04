@@ -31,7 +31,7 @@ export type AvailabilityInput = {
   leadTimeHours: number;
   /** How far ahead the calendar is open. Days beyond are omitted entirely. */
   maxAdvanceDays: number;
-  /** The earliest bookable setup time, Qatar wall clock. */
+  /** The earliest bookable booking time, Qatar wall clock. */
   earliestStartTime: IsoTime;
   /** Days occupied by a booking in a blocking status. */
   bookedDates: ReadonlySet<IsoDate>;

@@ -135,7 +135,7 @@ export const bookings = pgTable(
 
     /** The FULL DAY being reserved. A calendar date — never a timestamp. */
     bookingDate: date("booking_date").notNull(),
-    /** Customer's chosen setup time, Qatar wall clock. */
+    /** Customer's chosen booking time, Qatar wall clock. */
     preferredStart: time("preferred_start").notNull(),
 
     status: bookingStatus("status").notNull().default("pending"),
@@ -357,7 +357,7 @@ export const settings = pgTable("settings", {
   priceDelivery: integer("price_delivery").notNull(),
   currency: text("currency").notNull().default("QAR"),
 
-  /** Bookable setup times, Qatar wall clock, "HH:MM:SS". */
+  /** Bookable booking times, Qatar wall clock, "HH:MM:SS". */
   availableStartTimes: text("available_start_times").array().notNull(),
   /** Minimum notice before the first slot of a day. */
   leadTimeHours: integer("lead_time_hours").notNull().default(24),

@@ -28,7 +28,7 @@ const sql = postgres(url, { max: 1, ssl: isLocal ? false : "require" });
  */
 const qar = (majorUnits) => majorUnits * 100;
 
-/** The 8 bookable setup times, 08:00–15:00 Qatar, hourly. */
+/** The 8 bookable booking times, 08:00–15:00 Qatar, hourly. */
 const START_TIMES = Array.from(
   { length: 8 },
   (_, i) => `${String(8 + i).padStart(2, "0")}:00:00`,

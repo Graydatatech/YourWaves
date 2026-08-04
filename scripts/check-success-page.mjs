@@ -177,7 +177,7 @@ try {
       if (width === 320) {
         const details = await page.evaluate(() => document.body.innerText);
         record(details.includes("2026"), `${locale}: date is shown`);
-        record(/\d{1,2}:\d{2}/.test(details), `${locale}: setup time is shown`);
+        record(/\d{1,2}:\d{2}/.test(details), `${locale}: booking time is shown`);
         record(details.includes("Street 850"), `${locale}: address is shown`);
         record(
           details.includes("5,450"),
