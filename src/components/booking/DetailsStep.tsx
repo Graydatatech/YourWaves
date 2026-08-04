@@ -64,7 +64,6 @@ export function DetailsStep({ showErrors }: DetailsStepProps) {
       ? BOOKING_FORM.email
       : !z.string().email().safeParse(email.trim()).success;
 
-  const e164 = toE164(dial, national);
   const verified = isPhoneVerified(draft);
   // The contact the active channel proves. Null while it is incomplete, which
   // is what disables the "send code" button rather than sending to nothing.
