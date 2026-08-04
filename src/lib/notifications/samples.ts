@@ -34,6 +34,10 @@ export const SAMPLE_PAYLOAD: NotificationPayload = {
   currency: "QAR",
   driver_name: "Yousef Rahman",
   driver_phone: "+97455987654",
+  // So /dev/emails renders the completion email WITH its review button — the
+  // shape a real one has since 0019. Without it the preview shows the branch
+  // that a booking with no email address takes, which is the rarer one.
+  review_token: "sample-review-token-not-a-real-one",
 };
 
 /** The failure alert carries extra fields the others never have. */

@@ -535,7 +535,7 @@
       "subject": "How was your day? · {reference}",
       "preheader": "One question, thirty seconds.",
       "heading": "How was the wave?",
-      "intro": "Hello {name} — we hope yesterday went well. If you have a moment, we would like to know how it went. It takes about thirty seconds, and it genuinely shapes what we do next.",
+      "intro": "Hello {name} — we hope the day went well. If you have a moment, we would like to know how it went. It takes about thirty seconds, and it genuinely shapes what we do next.",
       "cta": "Leave your feedback",
       "note": "Your comment is only shown on our website if you are happy with it and we ask you first. The link works for the next thirty days."
     }

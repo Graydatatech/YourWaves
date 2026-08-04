@@ -153,20 +153,22 @@ export async function submitReview(
   return { ok: true };
 }
 
-/**
- * Queues surveys for every booking whose day was yesterday.
+/*
+ * There is no enqueueDueSurveys() any more.
  *
- * A thin wrapper over the SQL function, which is where the logic lives —
- * finding the bookings, minting the token and enqueueing the mail are one
- * transaction there. Called every minute by the notifications cron; safe to
- * call as often as you like.
+ * Until 0019 the notifications cron swept for bookings whose date was
+ * yesterday and mailed a survey for each. Two things were wrong with that:
+ * `booking_date` is when the wave was BOOKED for, not evidence it happened —
+ * a job the crew could not get the trailer in for still had a date, and still
+ * got "how was the wave?" the next morning — and the extra day bought nothing,
+ * because the office marking a booking `completed` IS the crew having packed
+ * up.
+ *
+ * The token is now minted by enqueue_completion_with_survey() from the status
+ * trigger, and the link travels in the completion email. Everything else in
+ * this file — resolving /r/<token>, recording an answer, moderation — is
+ * unchanged and still the whole of the customer-facing survey.
  */
-export async function enqueueDueSurveys(): Promise<number> {
-  const rows = await sql<{ enqueue_due_surveys: number }[]>`
-    SELECT enqueue_due_surveys()
-  `;
-  return rows[0]?.enqueue_due_surveys ?? 0;
-}
 
 export type PublishedReview = {
   id: string;

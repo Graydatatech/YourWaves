@@ -330,6 +330,19 @@ export function StatusUpdateEmail(
 ): ReactElement {
   const { t, dir } = ctx;
 
+  /**
+   * The completion email carries the review link (0019).
+   *
+   * It already ended "we would love to hear how it went" and then did not say
+   * how — the ask and the means were in two different emails, the second
+   * arriving a day later. One email, one button.
+   *
+   * Guarded on the token rather than on the status alone: a booking with no
+   * email address is never minted one, and rendering a button to /r/ with
+   * nothing after it would be worse than leaving the sentence unanswered.
+   */
+  const surveyHref = status === "completed" ? reviewHref(ctx.payload) : null;
+
   // A named crew member reads far better than "your driver", but the driver may
   // not be assigned yet for some transitions, so fall back rather than render
   // an empty gap.
@@ -356,6 +369,21 @@ export function StatusUpdateEmail(
       <Block dir={dir} paddingTop={20}>
         <DetailTable dir={dir} rows={bookingRows(ctx)} />
       </Block>
+
+      {surveyHref && (
+        <>
+          <Block dir={dir} paddingTop={20}>
+            <EmailButton href={surveyHref}>
+              {t("bookingSurvey.cta")}
+            </EmailButton>
+          </Block>
+          <Block dir={dir} paddingTop={12}>
+            <Paragraph dir={dir} muted>
+              {t("bookingSurvey.note")}
+            </Paragraph>
+          </Block>
+        </>
+      )}
 
       <ContactBlock ctx={ctx} />
     </Frame>
@@ -495,15 +523,29 @@ export function AdminNotificationFailedEmail(
  * at enqueue time, so a message sent after a retry carries the same token it
  * was minted with rather than one generated later.
  */
-export function BookingSurveyEmail(ctx: TemplateContext): ReactElement {
-  const { t, dir, payload } = ctx;
-
+/**
+ * The survey URL from a payload, or null when there is no token in it.
+ *
+ * Null is a real outcome, not a defensive check: a booking with no email
+ * address is never given a token (see enqueue_completion_with_survey in 0019),
+ * and a booking completed twice keeps the first one. Callers render the CTA
+ * only when this returns a link, so the alternative to a null check is an
+ * email with a button pointing at /r/ and nothing after it.
+ */
+function reviewHref(payload: TemplateContext["payload"]): string | null {
   const token =
     typeof payload.review_token === "string" ? payload.review_token : "";
+  if (token === "") return null;
   const origin = (
     process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"
   ).replace(/\/+$/, "");
-  const href = `${origin}/r/${token}`;
+  return `${origin}/r/${token}`;
+}
+
+export function BookingSurveyEmail(ctx: TemplateContext): ReactElement {
+  const { t, dir, payload } = ctx;
+
+  const href = reviewHref(payload) ?? "";
 
   return (
     <Frame ctx={ctx} preheader={t("bookingSurvey.preheader")}>

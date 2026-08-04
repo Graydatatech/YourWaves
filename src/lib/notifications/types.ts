@@ -25,7 +25,15 @@ export const TEMPLATE_KEYS = [
   "booking_setup_complete",
   "booking_completed",
   "booking_cancelled",
-  // Post-activity survey — sent the day after, links to /r/<token>.
+  /*
+   * Post-activity survey, links to /r/<token>.
+   *
+   * NO LONGER SENT AUTOMATICALLY. Since 0019 the review link travels in the
+   * completion email instead of a second message a day later. The key stays
+   * because the template still renders and can be resent by hand from the
+   * admin notifications log, and because removing a member of this union
+   * would orphan any row already queued under it.
+   */
   "booking_survey",
   // Operational alerts, from phase 6 and from this phase's own failure path
   "payment_refund_required",

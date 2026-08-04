@@ -1,5 +1,4 @@
 import { runNotificationWorker } from "@/lib/notifications/worker";
-import { enqueueDueSurveys } from "@/lib/reviews/service";
 
 const NO_STORE = { "Cache-Control": "no-store" } as const;
 
@@ -42,32 +41,17 @@ export async function POST(request: Request) {
 
   try {
     /**
-     * Queue any surveys that came due, then drain.
+     * Drain the outbox. Nothing is enqueued here any more.
      *
-     * Folded into this minute-by-minute job rather than given a schedule of
-     * its own, because it is idempotent twice over: `reviews.booking_id` is
-     * unique, so a second run inserts nothing, and `notifications` is unique
-     * on (booking_id, template_key, recipient), so even a lost review row
-     * could not produce a second email. Running it 1,440 times a day costs one
-     * indexed query per minute and removes a whole scheduler from the setup
-     * anyone has to get right.
-     *
-     * A failure here must not stop the drain: a survey that waits a minute is
-     * nothing, a confirmation that waits is the customer wondering whether
-     * they have booked.
+     * Until 0019 this job also swept for bookings whose date was yesterday and
+     * queued a survey for each. That is gone: the survey link is minted when
+     * the office marks a booking `completed` and travels in the completion
+     * email, so the trigger does the enqueueing and this route has one job
+     * again.
      */
-    let surveysQueued = 0;
-    try {
-      surveysQueued = await enqueueDueSurveys();
-    } catch (error) {
-      console.error("[cron/send-notifications] survey enqueue failed", {
-        error: error instanceof Error ? error.message : String(error),
-      });
-    }
-
     const result = await runNotificationWorker({ batchSize });
     return Response.json(
-      { ok: true, surveysQueued, ...result },
+      { ok: true, ...result },
       { headers: NO_STORE },
     );
   } catch (error) {
