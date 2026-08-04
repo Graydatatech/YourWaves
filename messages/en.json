@@ -291,12 +291,13 @@
       "submitFailed": "Something went wrong on our side. Please try again.",
       "networkError": "No connection. Check your signal and try again.",
       "needVerification": "Verify your mobile number to continue.",
-      "phoneNotVerified": "Your number needs verifying again. Please request a new code.",
+      "phoneNotVerified": "Your verification has expired. Please request a new code.",
       "needTerms": "Please agree to the terms and conditions",
       "needEmail": "Please enter your email address",
       "needBuilding": "Enter the building number to continue.",
       "needStreet": "Enter the street number to continue.",
-      "needZone": "Enter the zone number to continue."
+      "needZone": "Enter the zone number to continue.",
+      "needVerificationEmail": "Verify your email address to continue."
     },
     "otp": {
       "intro": "We will send a 4-digit code to this number on WhatsApp.",
@@ -353,7 +354,7 @@
       "DATE_OUT_OF_RANGE": "That date is further ahead than we are taking bookings.",
       "INVALID_START_TIME": "That booking time is not one we offer. Please pick another.",
       "SETTINGS_MISSING": "Booking is temporarily unavailable. Please try again shortly.",
-      "PHONE_NOT_VERIFIED": "Your number needs verifying again. Please request a new code.",
+      "PHONE_NOT_VERIFIED": "Your verification has expired. Please request a new code.",
       "VALIDATION_FAILED": "Please check the highlighted fields and try again.",
       "NETWORK": "No connection. Check your signal and try again."
     },
@@ -366,7 +367,7 @@
         "NOT_HOLDING": "That booking is no longer being held.",
         "HOLD_EXPIRED": "Your hold expired before payment started. Hold the date again.",
         "ALREADY_PAID": "This booking is already paid and confirmed.",
-        "PHONE_NOT_VERIFIED": "Your phone verification expired. Verify your number again to continue to payment — your booking details are unchanged.",
+        "PHONE_NOT_VERIFIED": "Your verification expired. Verify again to continue to payment — your booking details are unchanged.",
         "NOT_CONFIGURED": "Online payment is not available right now. Please contact us to complete your booking — your date is still held.",
         "PROVIDER_ERROR": "Our payment provider is not responding. Please try again in a moment.",
         "NETWORK": "No connection. Check your signal and try again."

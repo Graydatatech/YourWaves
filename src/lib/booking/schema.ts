@@ -325,6 +325,7 @@ export type StepError =
   | "invalidEmail"
   | "needEmail"
   | "needVerification"
+  | "needVerificationEmail"
   | "needTerms";
 
 type StepValidator = (draft: DraftState) => StepError | null;
@@ -381,7 +382,15 @@ export const stepValidators: Record<
     // Gated by the same flag the route reads, so the step cannot be required
     // here while the server ignores it, or hidden here while the server insists.
     if (BOOKING_FORM.contactVerification && !isPhoneVerified(draft)) {
-      return "needVerification";
+      // Two keys rather than one target-aware string, because both layouts
+      // render this with a bare tErrors(error) and next-intl types the key —
+      // so the sentence follows the channel without either call site knowing
+      // there is a channel. Telling somebody to "verify your mobile number"
+      // while the code is sitting in their inbox is the kind of instruction
+      // people follow literally and then give up on.
+      return draft.otpTarget === "phone"
+        ? "needVerification"
+        : "needVerificationEmail";
     }
     // Only demanded when there are terms to agree to. `termsRequired` is set
     // from /api/settings, so hiding the tick and requiring it cannot diverge.
