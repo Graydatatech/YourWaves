@@ -9,14 +9,29 @@ export { OtpDeliveryError } from "./channel";
 export type { OtpChannel } from "./channel";
 
 /**
+ * The channel when OTP_CHANNEL says nothing.
+ *
+ * EMAIL, not console. This project verifies email addresses — WhatsApp needs a
+ * Meta business account and an approved template, neither of which exists — so
+ * email is the answer to "what did you mean?" rather than a guess.
+ *
+ * It used to be `console`, which was right when console was the only channel
+ * that ran anywhere. The cost of that default once verification went live was
+ * total: `console` is refused in production, so ONE unset variable made "send
+ * code" answer 502 and no customer could finish a booking. Defaulting to the
+ * channel the product actually uses cannot fail that way, and console is still
+ * one explicit `OTP_CHANNEL=console` away for local work.
+ */
+const DEFAULT_CHANNEL = "email";
+
+/**
  * Chooses the delivery channel from the environment.
  *
- * OTP_CHANNEL = "whatsapp" | "console"
+ * OTP_CHANNEL = "email" | "whatsapp" | "console"   (default: email)
  *
- * The default is `console` so a fresh checkout runs without Meta credentials —
- * but selecting or defaulting to `console` in production is a hard error, not a
- * warning. A production deployment that quietly logs one-time codes to stdout
- * instead of delivering them would look like it worked.
+ * Selecting `console` in production remains a hard error, not a warning. A
+ * deployment that quietly logs one-time codes to stdout instead of delivering
+ * them would look like it worked.
  */
 let cached: OtpChannel | null = null;
 
@@ -24,7 +39,9 @@ export function createOtpChannel(): OtpChannel {
   if (cached) return cached;
 
   const isProduction = process.env.NODE_ENV === "production";
-  const requested = (process.env.OTP_CHANNEL ?? "console").toLowerCase();
+  const requested = (
+    process.env.OTP_CHANNEL || DEFAULT_CHANNEL
+  ).toLowerCase();
 
   /**
    * Email. The channel that actually works today — WhatsApp needs a Meta
@@ -68,9 +85,12 @@ export function createOtpChannel(): OtpChannel {
   }
 
   if (isProduction) {
+    // Only reachable now by asking for `console` outright, or by a typo — a
+    // misspelt channel must not silently become the default one.
     throw new Error(
-      "OTP_CHANNEL must be 'email' or 'whatsapp' in production. The console " +
-        "channel only logs codes to stdout and delivers nothing.",
+      `OTP_CHANNEL=${requested} is not deliverable in production. Use 'email' ` +
+        "(the default) or 'whatsapp'. The console channel only logs codes to " +
+        "stdout and delivers nothing.",
     );
   }
 
@@ -106,7 +126,9 @@ export function resetOtpChannel(): void {
  * so the two cannot disagree about a channel that does construct.
  */
 export function otpTarget(): "phone" | "email" {
-  const requested = (process.env.OTP_CHANNEL ?? "console").toLowerCase();
+  const requested = (
+    process.env.OTP_CHANNEL || DEFAULT_CHANNEL
+  ).toLowerCase();
   if (requested === "whatsapp") return "phone";
   if (requested === "email") return "email";
   // console, or something unrecognised: follow OTP_TARGET, default email.
