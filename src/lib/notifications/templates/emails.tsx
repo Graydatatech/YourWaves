@@ -370,7 +370,13 @@ export function StatusUpdateEmail(
         <DetailTable dir={dir} rows={bookingRows(ctx)} />
       </Block>
 
-      {surveyHref && (
+      {/* Ternary with an empty fragment, not `&&` — the pattern the rest of
+          this file uses. Frame types its children as ReactElement, so a
+          short-circuit that can evaluate to null or "" is not assignable. That
+          narrowness is deliberate: an email is assembled from real elements,
+          and a stray falsy child would render as nothing in a place the layout
+          expects a table cell. */}
+      {surveyHref ? (
         <>
           <Block dir={dir} paddingTop={20}>
             <EmailButton href={surveyHref}>
@@ -383,6 +389,8 @@ export function StatusUpdateEmail(
             </Paragraph>
           </Block>
         </>
+      ) : (
+        <></>
       )}
 
       <ContactBlock ctx={ctx} />
