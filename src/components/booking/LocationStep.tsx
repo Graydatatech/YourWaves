@@ -251,7 +251,7 @@ export function LocationStep({
       </div>
 
       {/* Area quick-picks -------------------------------------------------- */}
-      {serviceAreas.length > 0 && (
+      {BOOKING_FORM.area && serviceAreas.length > 0 && (
         <fieldset>
           <legend className="text-ink mb-2 block text-sm font-semibold">
             {t("areaLabel")}

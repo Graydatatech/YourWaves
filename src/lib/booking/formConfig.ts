@@ -19,6 +19,23 @@ export const BOOKING_FORM = {
   notes: false,
 
   /**
+   * The service-area quick-pick chips under the address.
+   *
+   * OFF. The address is three numbered fields now — building, street, zone —
+   * and a zone number already says where in Doha the villa is, more precisely
+   * than a district chip does. Asking for both invites them to disagree, and
+   * when they do it is the free-text one a dispatcher trusts and the chip one
+   * the maps query uses.
+   *
+   * `bookings.area` stays, is still optional in the schema, and is still shown
+   * everywhere it was — old bookings have one and the back office still filters
+   * by it. New bookings simply leave it null. The list itself is still editable
+   * under Admin → Settings → Service areas, so turning this back on is one
+   * `true` and nothing has to be re-entered.
+   */
+  area: false,
+
+  /**
    * The customer's email address.
    *
    * REQUIRED, not optional, and that is a deliberate change from "off".
