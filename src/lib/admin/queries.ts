@@ -536,6 +536,7 @@ export async function getDrivers(session: AdminSession): Promise<DriverRow[]> {
         id: string;
         full_name: string;
         phone: string;
+        email: string | null;
         role: DriverRow["role"];
         is_default: boolean;
         is_active: boolean;
@@ -543,7 +544,7 @@ export async function getDrivers(session: AdminSession): Promise<DriverRow[]> {
         total_jobs: number;
       }[]
     >`
-      SELECT d.id, d.full_name, d.phone, d.role, d.is_default, d.is_active,
+      SELECT d.id, d.full_name, d.phone, d.email, d.role, d.is_default, d.is_active,
              (SELECT count(*)::int FROM bookings b
                WHERE b.assigned_driver = d.id
                  AND b.status IN ('assigned','en_route')) AS active_jobs,
@@ -556,6 +557,7 @@ export async function getDrivers(session: AdminSession): Promise<DriverRow[]> {
       id: row.id,
       fullName: row.full_name,
       phone: row.phone,
+      email: row.email,
       role: row.role,
       isDefault: row.is_default,
       isActive: row.is_active,

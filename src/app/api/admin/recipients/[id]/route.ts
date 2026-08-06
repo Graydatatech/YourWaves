@@ -8,6 +8,12 @@ const NO_STORE = { "Cache-Control": "no-store" } as const;
 const patchSchema = z.object({
   fullName: z.string().trim().min(2).max(120).optional(),
   phone: z.string().trim().min(6).max(24).optional(),
+  /**
+   * Optional on a PATCH — this schema is also how "make default" and
+   * "deactivate" are posted, and requiring an address there would refuse a
+   * toggle on a recipient added before 0020. Validated when it IS sent.
+   */
+  email: z.string().trim().email().max(160).optional(),
   role: z.enum(["driver", "owner", "supervisor", "other"]).optional(),
   isDefault: z.boolean().optional(),
   isActive: z.boolean().optional(),

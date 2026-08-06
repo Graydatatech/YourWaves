@@ -153,6 +153,8 @@ export async function dispatchToPhone(
   input: {
     phone: string;
     fullName: string;
+    /** Where the job sheet goes. Null falls back to WhatsApp — see 0020. */
+    email?: string | null;
     recipientId?: string | null;
     locale?: string;
     rotate?: boolean;
@@ -164,7 +166,7 @@ export async function dispatchToPhone(
     SELECT * FROM create_booking_dispatch(
       ${bookingId}::uuid, ${input.phone}, ${input.fullName},
       ${input.recipientId ?? null}::uuid, ${input.locale ?? "en"},
-      ${input.rotate ?? false}
+      ${input.rotate ?? false}, ${input.email ?? null}
     )
   `;
   return { outcome: rows[0].outcome, dispatchId: rows[0].dispatch_id };

@@ -9,9 +9,16 @@ const NO_STORE = { "Cache-Control": "no-store" } as const;
 const bodySchema = z.object({
   /** Either an existing saved recipient… */
   recipientId: z.string().uuid().optional(),
-  /** …or a one-off name and number. */
+  /** …or a one-off name, number and address. */
   fullName: z.string().trim().min(2).max(120).optional(),
   phone: z.string().trim().min(6).max(24).optional(),
+  /**
+   * Where the job sheet goes. Optional here, unlike on the recipient list:
+   * this is the "the technician is going too, right now" path, and refusing a
+   * dispatch at 7am because nobody knows the man's email would be the wrong
+   * trade. Without one it falls back to WhatsApp, as 0020 describes.
+   */
+  email: z.union([z.literal(""), z.string().trim().email()]).optional(),
   locale: z.enum(["ar", "en"]).default("en"),
   /** Save the one-off to the recipient list for next time. */
   save: z.boolean().default(false),
@@ -47,12 +54,20 @@ export async function POST(
   }
 
   let phone: string | null = null;
+  let email: string | null = parsed.data.email?.trim() || null;
   let fullName = parsed.data.fullName ?? "";
   let recipientId: string | null = parsed.data.recipientId ?? null;
 
   if (recipientId) {
-    const rows = await sql<{ full_name: string; phone: string; is_active: boolean }[]>`
-      SELECT full_name, phone, is_active FROM dispatch_recipients
+    const rows = await sql<
+      {
+        full_name: string;
+        phone: string;
+        email: string | null;
+        is_active: boolean;
+      }[]
+    >`
+      SELECT full_name, phone, email, is_active FROM dispatch_recipients
        WHERE id = ${recipientId}::uuid
     `;
     if (!rows[0]) {
@@ -63,6 +78,10 @@ export async function POST(
     }
     phone = rows[0].phone;
     fullName = rows[0].full_name;
+    // The saved address wins over anything in the body: the list is the record
+    // of how to reach this person, and a stale value posted by a cached page
+    // must not redirect a job sheet.
+    email = rows[0].email;
   } else {
     if (!parsed.data.phone || !fullName) {
       return Response.json({ error: "invalid_body" }, { status: 422, headers: NO_STORE });
@@ -76,9 +95,12 @@ export async function POST(
     // silently join the permanent list.
     if (parsed.data.save) {
       const saved = await sql<{ id: string }[]>`
-        INSERT INTO dispatch_recipients (full_name, phone, role, is_default)
-        VALUES (${fullName}, ${phone}, 'other', false)
-        ON CONFLICT (phone) DO UPDATE SET full_name = EXCLUDED.full_name
+        INSERT INTO dispatch_recipients (full_name, phone, email, role, is_default)
+        VALUES (${fullName}, ${phone}, ${email}, 'other', false)
+        ON CONFLICT (phone) DO UPDATE
+           SET full_name = EXCLUDED.full_name,
+               -- Never blank a known address with an omitted one.
+               email = COALESCE(EXCLUDED.email, dispatch_recipients.email)
         RETURNING id
       `;
       recipientId = saved[0]?.id ?? null;
@@ -88,6 +110,7 @@ export async function POST(
   const result = await dispatchToPhone(auth, bookingId, {
     phone,
     fullName,
+    email,
     recipientId,
     locale: parsed.data.locale,
     rotate: parsed.data.rotate,

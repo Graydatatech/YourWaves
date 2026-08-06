@@ -430,14 +430,17 @@ export async function createDriver(
   input: {
     fullName: string;
     phone: string;
+    /** Where their job sheets go. Required by the route since 0020. */
+    email: string;
     role?: "driver" | "owner" | "supervisor" | "other";
     isDefault?: boolean;
   },
 ): Promise<{ id: string }> {
   const rows = await asUser(session.userId, async (tx) => {
     return tx<{ id: string }[]>`
-      INSERT INTO dispatch_recipients (full_name, phone, role, is_default)
+      INSERT INTO dispatch_recipients (full_name, phone, email, role, is_default)
       VALUES (${input.fullName.trim()}, ${input.phone.trim()},
+              ${input.email.trim().toLowerCase()},
               ${input.role ?? "driver"}, ${input.isDefault ?? false})
       RETURNING id
     `;
@@ -451,6 +454,7 @@ export async function updateDriver(
   patch: {
     fullName?: string;
     phone?: string;
+    email?: string;
     role?: "driver" | "owner" | "supervisor" | "other";
     isDefault?: boolean;
     isActive?: boolean;
@@ -472,6 +476,7 @@ export async function updateDriver(
       UPDATE dispatch_recipients SET
         full_name  = COALESCE(${patch.fullName ?? null}, full_name),
         phone      = COALESCE(${patch.phone ?? null}, phone),
+        email      = COALESCE(${patch.email?.trim().toLowerCase() ?? null}, email),
         role       = COALESCE(${patch.role ?? null}, role),
         is_default = COALESCE(${patch.isDefault ?? null}, is_default),
         is_active  = COALESCE(${patch.isActive ?? null}, is_active)

@@ -661,6 +661,7 @@ function DriversPanel({ drivers }: { drivers: DriverRow[] }) {
 
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
   const [role, setRole] = useState<DriverRow["role"]>("driver");
   const [isDefault, setIsDefault] = useState(true);
   const [pending, setPending] = useState(false);
@@ -675,7 +676,7 @@ function DriversPanel({ drivers }: { drivers: DriverRow[] }) {
     const response = await fetch("/api/admin/recipients", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ fullName, phone, role, isDefault }),
+      body: JSON.stringify({ fullName, phone, email, role, isDefault }),
     });
 
     setPending(false);
@@ -689,13 +690,16 @@ function DriversPanel({ drivers }: { drivers: DriverRow[] }) {
           ? t("settings.driverDuplicate")
           : detail.error === "invalid_phone"
             ? t("settings.driverPhoneInvalid")
-            : t("common.error"),
+            : detail.error === "invalid_body"
+              ? t("settings.driverEmailInvalid")
+              : t("common.error"),
       );
       return;
     }
 
     setFullName("");
     setPhone("");
+    setEmail("");
     router.refresh();
   }
 
@@ -798,6 +802,19 @@ function DriversPanel({ drivers }: { drivers: DriverRow[] }) {
                   ? ` · ${t("settings.driverJobs", { count: driver.activeJobs })}`
                   : ""}
               </p>
+              {/* The address, or a warning that there is none. A recipient
+                  added before 0020 still falls back to WhatsApp, which nothing
+                  has ever delivered — so "no email" is the one thing about a
+                  row that needs to be visible without opening anything. */}
+              <p
+                className={cn(
+                  "truncate text-xs",
+                  driver.email ? "text-muted-2" : "text-danger font-semibold",
+                )}
+                dir="ltr"
+              >
+                {driver.email ?? t("settings.driverEmailMissing")}
+              </p>
               <button
                 type="button"
                 onClick={() => toggleDefault(driver)}
@@ -857,9 +874,11 @@ function DriversPanel({ drivers }: { drivers: DriverRow[] }) {
         ))}
       </ul>
 
-      {/* Name, number, role and whether they are on auto-dispatch. A recipient
-          is reached on WhatsApp — the number IS the identity (0009), and
-          `is_default` decides who hears about a job the moment it is paid. */}
+      {/* Name, number, email, role and whether they are on auto-dispatch.
+          The number is still the IDENTITY (0009's unique index, and what a
+          dispatcher rings), but since 0020 the job sheet itself goes to the
+          email — so both are required. `is_default` decides who hears about a
+          job the moment it is paid for. */}
       <p className="text-muted-2 mt-3 text-xs">{t("settings.driverHint")}</p>
 
       <div className="border-border wide:grid-cols-2 mt-2 grid gap-2 border-t pt-3">
@@ -899,6 +918,21 @@ function DriversPanel({ drivers }: { drivers: DriverRow[] }) {
             }
           />
         </div>
+
+        {/* Where the job sheet goes. Spans both columns at the wide
+            breakpoint: an address is longer than a name or a number and
+            truncating it mid-domain makes a typo impossible to spot. */}
+        <input
+          className={cn(FIELD, "wide:col-span-2")}
+          type="email"
+          inputMode="email"
+          dir="ltr"
+          placeholder={t("settings.driverEmail")}
+          aria-label={t("settings.driverEmail")}
+          autoComplete="off"
+          value={email}
+          onChange={(event) => setEmail(event.target.value)}
+        />
       </div>
 
       <div className="wide:grid-cols-2 mt-2 grid gap-2">

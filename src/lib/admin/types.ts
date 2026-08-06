@@ -185,6 +185,12 @@ export type DriverRow = {
   id: string;
   fullName: string;
   phone: string;
+  /**
+   * Where their job sheets go. Nullable because rows predating 0020 have none
+   * — those fall back to WhatsApp, and the settings list flags them so an
+   * admin can see which people still need filling in.
+   */
+  email: string | null;
   role: "driver" | "owner" | "supervisor" | "other";
   /** Dispatched automatically on every newly confirmed booking. */
   isDefault: boolean;

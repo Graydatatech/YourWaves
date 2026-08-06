@@ -398,6 +398,75 @@ export function StatusUpdateEmail(
   );
 }
 
+/**
+ * The dispatch job sheet, as an email.
+ *
+ * Phase 9 sent this only over WhatsApp, against a Meta template that has never
+ * been approved — so no crew has ever received one. 0020 moves it to email,
+ * which is provisioned and already carries every customer message.
+ *
+ * The LINK is the whole thing. Everything above it is what a driver needs to
+ * decide whether this job is theirs and when to leave; the address, the
+ * customer's number and the buttons that move the booking are all behind the
+ * token, because §4i treats the URL as a credential and an email is forwarded
+ * more casually than it is written.
+ *
+ * No customer address in the body for that reason, and none of the actions.
+ * The arrival time IS here: it is the one fact that is useless late.
+ */
+export function DispatchJobEmail(ctx: TemplateContext): ReactElement {
+  const { t, dir, payload } = ctx;
+
+  const token =
+    typeof payload.dispatch_token === "string" ? payload.dispatch_token : "";
+  const origin = (
+    process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"
+  ).replace(/\/+$/, "");
+
+  return (
+    <Frame ctx={ctx} preheader={t("dispatchJob.preheader")}>
+      <Block dir={dir}>
+        <Heading dir={dir}>{t("dispatchJob.heading")}</Heading>
+        <Paragraph dir={dir} muted>
+          {t("dispatchJob.intro", { name: ctx.driverName })}
+        </Paragraph>
+      </Block>
+
+      <Block dir={dir} paddingTop={8}>
+        <ReferenceBadge label={t("common.reference")} value={ctx.reference} />
+      </Block>
+
+      <Block dir={dir} paddingTop={20}>
+        <DetailTable
+          dir={dir}
+          rows={[
+            { label: t("common.date"), value: ctx.dateLong },
+            { label: t("dispatchJob.arriveBy"), value: ctx.arrivalTime },
+            { label: t("common.time"), value: ctx.startTime },
+            { label: t("dispatchJob.customer"), value: ctx.customerName },
+          ]}
+        />
+      </Block>
+
+      {token ? (
+        <Block dir={dir} paddingTop={22}>
+          <EmailButton href={`${origin}/d/${token}`}>
+            {t("dispatchJob.cta")}
+          </EmailButton>
+        </Block>
+      ) : (
+        <></>
+      )}
+
+      <Block dir={dir} paddingTop={16}>
+        <Paragraph dir={dir} muted>
+          {t("dispatchJob.note")}
+        </Paragraph>
+      </Block>
+    </Frame>
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Operational alerts (admin)
 // ---------------------------------------------------------------------------

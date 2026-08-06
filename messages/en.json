@@ -552,6 +552,16 @@
       "intro": "Hello {name} — we hope the day went well. If you have a moment, we would like to know how it went. It takes about thirty seconds, and it genuinely shapes what we do next.",
       "cta": "Leave your feedback",
       "note": "Your comment is only shown on our website if you are happy with it and we ask you first. The link works for the next thirty days."
+    },
+    "dispatchJob": {
+      "subject": "Job sheet · {reference} · {date}",
+      "preheader": "Open the link for the address and to update status.",
+      "heading": "You have a job",
+      "intro": "Hello {name} — here are the essentials. Everything else is behind the link.",
+      "arriveBy": "Arrive by",
+      "customer": "Customer",
+      "cta": "Open the job sheet",
+      "note": "The job sheet has the full address, the customer's number, navigation, and the buttons for on my way, setup complete and job done. Do not forward this email — the link is the key, and anyone holding it can see the customer's address."
     }
   },
   "admin": {
@@ -804,7 +814,7 @@
       "audit": "Recent changes",
       "auditEmpty": "No changes recorded yet.",
       "auditEntry": "{name} changed {keys}",
-      "driverHint": "Everyone here can be sent a job by WhatsApp. Defaults are messaged automatically the moment a booking is paid.",
+      "driverHint": "Everyone here can be sent a job sheet by email. Defaults are messaged automatically the moment a booking is paid.",
       "driverDuplicate": "A driver with that number already exists.",
       "driverPhoneInvalid": "That is not a valid Qatari mobile number.",
       "driverDelete": "Delete",
@@ -854,7 +864,10 @@
       "faqQuestionEn": "Question (English)",
       "faqQuestionAr": "Question (Arabic)",
       "faqAnswerEn": "Answer (English)",
-      "faqAnswerAr": "Answer (Arabic)"
+      "faqAnswerAr": "Answer (Arabic)",
+      "driverEmail": "Email for the job sheet",
+      "driverEmailInvalid": "Enter a valid email address — the job sheet is sent there.",
+      "driverEmailMissing": "No email — add one so they receive job sheets"
     },
     "admins": {
       "title": "Back-office access",

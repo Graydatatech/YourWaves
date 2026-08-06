@@ -10,6 +10,7 @@ import {
   StatusUpdateEmail,
   type StatusKey,
   BookingSurveyEmail,
+  DispatchJobEmail,
 } from "./emails";
 import type { TemplateContext } from "./context";
 import type { NotificationLocale, TemplateKey } from "../types";
@@ -202,8 +203,25 @@ export const TEMPLATES: Record<TemplateKey, TemplateDefinition> = {
    * full address. The address is deliberately NOT in the message — a forwarded
    * WhatsApp carries it forever, while a link can be revoked and expires.
    */
+  /**
+   * The job sheet. EMAIL FIRST since 0020.
+   *
+   * Both channels are declared and the enqueue decides which row exists — the
+   * SQL sends `email` when the recipient has an address and `whatsapp` when
+   * they do not, so this registry has to be able to render either. The
+   * WhatsApp side still needs a Meta template nobody has approved; the email
+   * side needs nothing that is not already provisioned.
+   */
   dispatch_job: {
     audience: "driver",
+    email: {
+      subjectKey: "dispatchJob.subject",
+      subjectValues: (ctx) => ({
+        reference: ctx.reference,
+        date: ctx.dateLong,
+      }),
+      render: DispatchJobEmail,
+    },
     whatsapp: whatsapp("yw_dispatch_job"),
   },
 

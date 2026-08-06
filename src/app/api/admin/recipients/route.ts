@@ -7,7 +7,10 @@ import { normaliseDriverPhone } from "@/lib/admin/driverPhone";
 const NO_STORE = { "Cache-Control": "no-store" } as const;
 
 /**
- * Dispatch recipients — anyone who should receive a job by WhatsApp.
+ * Dispatch recipients — anyone who should receive a job sheet.
+ *
+ * BY EMAIL since 0020. The number is still the identity (0009's unique index,
+ * and what a dispatcher rings), but the job sheet itself goes to the address.
  *
  * Replaces /api/admin/drivers. Since phase 9 a "driver" is just a recipient
  * with role 'driver'; the same list also holds the owner, a supervisor and the
@@ -17,6 +20,12 @@ const NO_STORE = { "Cache-Control": "no-store" } as const;
 const createSchema = z.object({
   fullName: z.string().trim().min(2).max(120),
   phone: z.string().trim().min(6).max(24),
+  /**
+   * REQUIRED. This is where their job sheets go, so a recipient without one is
+   * a person the system cannot reach — and 0020's WhatsApp fallback exists for
+   * rows that predate this field, not as a way to keep adding new ones.
+   */
+  email: z.string().trim().email().max(160),
   role: z.enum(["driver", "owner", "supervisor", "other"]).default("driver"),
   isDefault: z.boolean().default(false),
 });
@@ -38,8 +47,9 @@ export async function POST(request: Request) {
     return Response.json({ error: "invalid_body" }, { status: 422, headers: NO_STORE });
   }
 
-  // The number is the identity — it is where the dispatch WhatsApp goes — so it
-  // has to be dialable, not merely plausible.
+  // The number is the identity — 0009's unique index, and what a dispatcher
+  // rings from the booking screen — so it has to be dialable, not merely
+  // plausible, even though the job sheet now goes by email.
   const phone = normaliseDriverPhone(parsed.data.phone);
   if (!phone) {
     return Response.json({ error: "invalid_phone" }, { status: 422, headers: NO_STORE });
@@ -49,6 +59,7 @@ export async function POST(request: Request) {
     const result = await createDriver(auth, {
       fullName: parsed.data.fullName,
       phone,
+      email: parsed.data.email,
       role: parsed.data.role,
       isDefault: parsed.data.isDefault,
     });
