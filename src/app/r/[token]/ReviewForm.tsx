@@ -34,8 +34,10 @@ export function ReviewForm({
   const [done, setDone] = useState(invite.submitted);
   const [error, setError] = useState<string | null>(null);
 
+  const nameMissing = name.trim() === "";
+
   async function submit() {
-    if (rating === 0 || busy) return;
+    if (rating === 0 || nameMissing || busy) return;
     setBusy(true);
     setError(null);
     try {
@@ -138,13 +140,19 @@ export function ReviewForm({
           to be quoted without their full name on a marketing page. */}
       <div className="mt-4">
         <label htmlFor="review-name" className="text-ink text-sm font-bold">
-          {t("nameLabel")}
+          {t("nameLabel")}{" "}
+          <span aria-hidden="true" className="text-danger">
+            *
+          </span>
         </label>
         <p className="text-muted-2 mt-1 mb-2 text-sm">{t("nameHint")}</p>
         <input
           id="review-name"
           value={name}
           maxLength={120}
+          required
+          aria-required="true"
+          aria-invalid={nameMissing || undefined}
           onChange={(event) => setName(event.target.value)}
           className={cn(
             "rounded-input border-border bg-surface min-h-11 w-full border px-4",
@@ -158,7 +166,7 @@ export function ReviewForm({
       <button
         type="button"
         onClick={submit}
-        disabled={rating === 0 || busy}
+        disabled={rating === 0 || nameMissing || busy}
         className={cn(
           "bg-brand text-ink-deep shadow-cta mt-7 flex min-h-13 w-full items-center",
           "rounded-pill justify-center px-6 text-base font-bold",
@@ -168,11 +176,18 @@ export function ReviewForm({
         {busy ? t("sending") : t("submit")}
       </button>
 
-      {rating === 0 && (
+      {/* One reason at a time, and the rating first, because that is the one
+          the page is built around — telling somebody about two missing fields
+          when they have filled in neither is noise. */}
+      {rating === 0 ? (
         <p className="text-muted-2 pt-2 text-center text-sm">
           {t("ratingRequired")}
         </p>
-      )}
+      ) : nameMissing ? (
+        <p className="text-muted-2 pt-2 text-center text-sm">
+          {t("nameRequired")}
+        </p>
+      ) : null}
 
       {error && (
         <p role="alert" className="text-danger pt-3 text-center text-sm font-semibold">

@@ -170,12 +170,20 @@ export async function submitReview(
  * unchanged and still the whole of the customer-facing survey.
  */
 
+/**
+ * A review as the PUBLIC page may see it.
+ *
+ * No `authorArea`. The card stopped showing the district, and the query
+ * stopped selecting it in the same change: this shape is mapped into props for
+ * a Client Component, so anything left on it crosses the wire into the RSC
+ * payload whether or not a component renders it. The back office reads the
+ * area through its own query, where it is operational data.
+ */
 export type PublishedReview = {
   id: string;
   rating: number;
   comment: string;
   authorName: string;
-  authorArea: string | null;
 };
 
 /**
@@ -194,10 +202,9 @@ export async function getPublishedReviews(
         rating: number;
         comment: string;
         author_name: string | null;
-        author_area: string | null;
       }[]
     >`
-      SELECT id, rating, comment, author_name, author_area
+      SELECT id, rating, comment, author_name
         FROM reviews
        WHERE is_published
          AND comment IS NOT NULL
@@ -211,7 +218,6 @@ export async function getPublishedReviews(
       rating: row.rating,
       comment: row.comment,
       authorName: row.author_name ?? "",
-      authorArea: row.author_area,
     }));
   } catch {
     // No migration 0018 yet, or a brief outage. The testimonials section falls

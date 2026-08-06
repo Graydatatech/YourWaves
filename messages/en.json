@@ -976,7 +976,7 @@
     "commentHint": "Optional, but it is the part we read.",
     "commentPlaceholder": "What worked, what didn't…",
     "nameLabel": "Name to show",
-    "nameHint": "Only used if we ask you about publishing your comment.",
+    "nameHint": "Shown with your comment if we publish it, and nowhere else.",
     "submit": "Send",
     "sending": "Sending…",
     "failed": "That did not send. Please try again.",
@@ -987,6 +987,7 @@
     "expiredTitle": "This link has expired",
     "expiredBody": "Feedback links work for thirty days. If you would still like to tell us how it went, just reply to any of our emails.",
     "invalidTitle": "This link does not work",
-    "invalidBody": "Please check the link in your email, or reply to it and we will sort it out."
+    "invalidBody": "Please check the link in your email, or reply to it and we will sort it out.",
+    "nameRequired": "Enter the name to show with your review."
   }
 }

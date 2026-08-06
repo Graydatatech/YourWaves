@@ -13,7 +13,6 @@ export type Testimonial = {
   id: string;
   quote: string;
   name: string;
-  role: string;
   rating: number;
 };
 
@@ -125,12 +124,16 @@ export function Testimonials({ items }: { items: Testimonial[] }) {
                 aria-hidden="true"
                 className="bg-brand size-9 shrink-0 rounded-full"
               />
+              {/* Name only. The area used to sit under it — "Al Waab", "Al
+                  Wakrah" — which on a page that also shows the villa service
+                  narrows a named individual to a district. A customer agreeing
+                  to be quoted is agreeing to the quote, not to having their
+                  neighbourhood published beside it. The column is still
+                  collected and still visible in the back office, where it is
+                  operational data rather than a public attribution. */}
               <span className="min-w-0">
                 <span className="text-ink block truncate text-sm font-bold">
                   {item.name}
-                </span>
-                <span className="text-muted-2 block truncate text-sm">
-                  {item.role}
                 </span>
               </span>
             </figcaption>

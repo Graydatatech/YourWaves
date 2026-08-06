@@ -62,7 +62,6 @@ export async function Gallery() {
     id: review.id,
     quote: review.comment,
     name: review.authorName || t("anonymous"),
-    role: review.authorArea ?? "",
     rating: review.rating,
   }));
 

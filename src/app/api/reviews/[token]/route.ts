@@ -6,7 +6,16 @@ const NO_STORE = { "Cache-Control": "no-store" } as const;
 const bodySchema = z.object({
   rating: z.number().int().min(1).max(5),
   comment: z.string().max(2000).default(""),
-  authorName: z.string().max(120).default(""),
+  /**
+   * REQUIRED, not defaulted.
+   *
+   * A published quote with no name attached is the thing a reader discounts
+   * fastest — and the form now asks for it as a required field, so accepting a
+   * blank one here would mean the UI and the endpoint disagreed about what a
+   * complete answer is. `trim().min(1)` rather than `min(1)`: a space is not a
+   * name, and it would render as an empty line under the quote.
+   */
+  authorName: z.string().trim().min(1).max(120),
 });
 
 /**
