@@ -5,6 +5,7 @@ import { Calendar } from "./Calendar";
 import { TimePicker } from "./TimePicker";
 import { LocationStep } from "./LocationStep";
 import { DetailsStep } from "./DetailsStep";
+import { TermsStep } from "./TermsStep";
 import { useBooking } from "./BookingProvider";
 import type { PublicSettings } from "./useBookingData";
 import type { DayState } from "@/lib/availability";
@@ -77,6 +78,11 @@ export function LocationStepBody({ locale, settings }: StepBodyProps) {
 export function DetailsStepBody() {
   const { showErrorFor } = useBooking();
   return <DetailsStep showErrors={showErrorFor("details")} />;
+}
+
+export function TermsStepBody({ locale }: { locale: "ar" | "en" }) {
+  const { showErrorFor } = useBooking();
+  return <TermsStep locale={locale} showErrors={showErrorFor("terms")} />;
 }
 
 /** Heading + helper text for a step, used by both layouts. */

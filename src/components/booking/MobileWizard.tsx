@@ -2,13 +2,13 @@
 
 import { useTranslations } from "next-intl";
 import { cn } from "@/lib/cn";
-import { STEP_ORDER } from "@/lib/booking/schema";
 import { WizardProgress } from "./WizardProgress";
 import { HoldCountdownChip } from "./HoldPanel";
 import { MobilePriceBar } from "./MobilePriceBar";
 import {
   DateStepBody,
   DetailsStepBody,
+  TermsStepBody,
   LocationStepBody,
   StepHeading,
   TimeStepBody,
@@ -48,9 +48,12 @@ export function MobileWizard({
   const t = useTranslations("booking");
   const tErrors = useTranslations("booking.errors");
   const tHold = useTranslations("booking.hold");
-  const { step, stepIndex, next, back, errorFor, showErrorFor } = useBooking();
+  const { step, stepIndex, steps, next, back, errorFor, showErrorFor } =
+    useBooking();
 
-  const isLast = stepIndex === STEP_ORDER.length - 1;
+  // Counted against the VISIBLE list. Against STEP_ORDER the last step would
+  // read "Next" whenever terms were absent, and pressing it would do nothing.
+  const isLast = stepIndex === steps.length - 1;
   const error = errorFor(step);
   const blocked = error !== null;
   // Show the reason once they have tried to advance, or as soon as they are on
@@ -72,6 +75,7 @@ export function MobileWizard({
         {step === "time" && <TimeStepBody {...stepProps} />}
         {step === "location" && <LocationStepBody {...stepProps} />}
         {step === "details" && <DetailsStepBody />}
+        {step === "terms" && <TermsStepBody locale={stepProps.locale} />}
       </div>
 
       {/* Footer: price bar + controls, above the home indicator. */}

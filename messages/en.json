@@ -182,7 +182,10 @@
       "locationTitle": "Where are we going?",
       "locationHelp": "A flat 10 × 5 metre area with vehicle access.",
       "detailsTitle": "How do we reach you?",
-      "detailsHelp": "We will confirm by WhatsApp on the number you give us."
+      "detailsHelp": "We will confirm by WhatsApp on the number you give us.",
+      "terms": "Terms",
+      "termsTitle": "Terms and conditions",
+      "termsHelp": "Read these and agree before you pay."
     },
     "calendar": {
       "gridLabel": "Choose a booking date",
@@ -401,6 +404,16 @@
         "water": "The unit arrives filled. We will not draw from or drain into your pool.",
         "arrival": "Our crew will arrive several hours before your booking time to set up, prepare and run the safety check."
       }
+    },
+    "terms": {
+      "boxLabel": "Terms and conditions",
+      "loading": "Loading the terms…",
+      "unavailable": "We could not load the terms just now. Please refresh, or contact us before paying.",
+      "englishFallback": "These terms are shown in English — an Arabic version is not published yet.",
+      "openFull": "Open the full terms in a new tab",
+      "agree": "I have read and agree to the terms and conditions.",
+      "required": "You need to agree to the terms before you can pay.",
+      "nextIsPayment": "The next step takes you to payment."
     }
   },
   "footer": {

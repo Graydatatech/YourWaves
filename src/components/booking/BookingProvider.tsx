@@ -14,6 +14,7 @@ import type { DraftState, StepError, StepKey } from "@/lib/booking/schema";
 import {
   DEFAULT_DIAL_CODE,
   STEP_ORDER,
+  visibleSteps,
   stepValidators,
 } from "@/lib/booking/schema";
 
@@ -92,6 +93,11 @@ type BookingContextValue = {
   locale: "ar" | "en";
   step: StepKey;
   stepIndex: number;
+  /**
+   * The steps this draft walks — STEP_ORDER minus any that do not apply.
+   * Everything that renders or counts steps must read this, not STEP_ORDER.
+   */
+  steps: readonly StepKey[];
   hydrated: boolean;
   /** Merge fields into the draft. */
   patch: (patch: Draft) => void;
@@ -186,7 +192,15 @@ export function BookingProvider({
   );
   const reset = useCallback(() => dispatch({ type: "reset" }), []);
 
-  const stepIndex = STEP_ORDER.indexOf(state.step);
+  const steps = useMemo(() => visibleSteps(state.draft), [state.draft]);
+
+  /**
+   * -1 when the current step is not in the visible list, which happens for one
+   * render if terms stop being required while the customer is standing on that
+   * step. next() and back() both treat it as "start of the list", so they
+   * cannot strand anybody on a screen the progress bar no longer shows.
+   */
+  const stepIndex = steps.indexOf(state.step);
 
   const errorFor = useCallback(
     (step: StepKey) => stepValidators[step](state.draft),
@@ -199,18 +213,19 @@ export function BookingProvider({
   );
 
   const next = useCallback(() => {
-    const current = STEP_ORDER[stepIndex];
+    const current = steps[stepIndex];
+    if (!current) return;
     // Mark touched so the inline reason appears if they are blocked.
     dispatch({ type: "touch", step: current });
     if (stepValidators[current](state.draft) !== null) return;
-    const following = STEP_ORDER[stepIndex + 1];
+    const following = steps[stepIndex + 1];
     if (following) dispatch({ type: "setStep", step: following });
-  }, [stepIndex, state.draft]);
+  }, [steps, stepIndex, state.draft]);
 
   const back = useCallback(() => {
-    const previous = STEP_ORDER[stepIndex - 1];
+    const previous = steps[stepIndex - 1];
     if (previous) dispatch({ type: "setStep", step: previous });
-  }, [stepIndex]);
+  }, [steps, stepIndex]);
 
   const showErrorFor = useCallback(
     (step: StepKey) => Boolean(state.touched[step]),
@@ -218,8 +233,8 @@ export function BookingProvider({
   );
 
   const allComplete = useMemo(
-    () => STEP_ORDER.every((s) => stepValidators[s](state.draft) === null),
-    [state.draft],
+    () => steps.every((s) => stepValidators[s](state.draft) === null),
+    [steps, state.draft],
   );
 
   const value = useMemo<BookingContextValue>(
@@ -228,6 +243,7 @@ export function BookingProvider({
       locale,
       step: state.step,
       stepIndex,
+      steps,
       hydrated: state.hydrated,
       patch,
       goTo,
@@ -245,6 +261,7 @@ export function BookingProvider({
       state.step,
       state.hydrated,
       stepIndex,
+      steps,
       patch,
       goTo,
       next,

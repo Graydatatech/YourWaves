@@ -2,7 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { cn } from "@/lib/cn";
-import { STEP_ORDER, type StepKey } from "@/lib/booking/schema";
+import { type StepKey } from "@/lib/booking/schema";
 import { useBooking } from "./BookingProvider";
 
 /**
@@ -15,12 +15,14 @@ import { useBooking } from "./BookingProvider";
  */
 export function WizardProgress() {
   const t = useTranslations("booking.steps");
-  const { step, stepIndex, goTo, isStepComplete } = useBooking();
+  // `steps`, not STEP_ORDER: the terms step is absent when the business has
+  // written none, and a dot leading nowhere is worse than one fewer dot.
+  const { step, stepIndex, steps, goTo, isStepComplete } = useBooking();
 
   return (
     <nav aria-label={t("progressLabel")}>
       <ol className="flex items-center gap-1.5">
-        {STEP_ORDER.map((key: StepKey, index) => {
+        {steps.map((key: StepKey, index) => {
           const isActive = key === step;
           const isDone = index < stepIndex && isStepComplete(key);
           const reachable = index <= stepIndex || isStepComplete(key);

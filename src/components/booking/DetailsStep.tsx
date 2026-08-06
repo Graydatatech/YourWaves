@@ -13,7 +13,6 @@ import {
   verificationTargetValue,
 } from "@/lib/booking/schema";
 import { BOOKING_FORM } from "@/lib/booking/formConfig";
-import { Link } from "@/i18n/navigation";
 import { useBooking } from "./BookingProvider";
 import { OtpField } from "./OtpField";
 
@@ -43,8 +42,6 @@ export function DetailsStep({ showErrors }: DetailsStepProps) {
   const dialId = useId();
   const phoneId = useId();
   const emailId = useId();
-  const termsId = useId();
-  const termsErrorId = `${termsId}-error`;
   const phoneHintId = `${phoneId}-hint`;
 
   const name = draft.customerName ?? "";
@@ -249,70 +246,6 @@ export function DetailsStep({ showErrors }: DetailsStepProps) {
                 : t("changeEmail")}
             </button>
           )}
-        </div>
-      )}
-
-      {/* Terms & conditions ------------------------------------------------
-          Rendered only when terms exist. `termsRequired` comes from
-          /api/settings, and the hold route asks the database the same question
-          — so the tick cannot be hidden while the server insists on it, nor
-          shown while the server ignores it. */}
-      {draft.termsRequired && (
-        <div>
-          <label
-            htmlFor={termsId}
-            className={cn(
-              "flex cursor-pointer items-start gap-3",
-              // The whole row is the target, not just the 20px box.
-              "min-h-11 py-1",
-            )}
-          >
-            <input
-              id={termsId}
-              type="checkbox"
-              checked={draft.termsAccepted === true}
-              onChange={(event) =>
-                patch({ termsAccepted: event.target.checked })
-              }
-              aria-describedby={
-                showErrors && draft.termsAccepted !== true
-                  ? termsErrorId
-                  : undefined
-              }
-              className={cn(
-                "accent-accent mt-0.5 size-5 shrink-0 cursor-pointer",
-                "focus-visible:outline-focus focus-visible:outline-2 focus-visible:outline-offset-2",
-              )}
-            />
-            <span className="text-ink text-base">
-              {t.rich("termsAgree", {
-                link: (chunks) => (
-                  // Opens in a new tab on purpose: this is the one link on the
-                  // form that must not cost the customer their answers. The
-                  // draft survives in sessionStorage either way, but a tab they
-                  // can close is less alarming than a navigation away from a
-                  // half-finished booking.
-                  <Link
-                    href="/terms"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-accent-strong font-semibold underline"
-                  >
-                    {chunks}
-                  </Link>
-                ),
-              })}
-            </span>
-          </label>
-
-          <p
-            id={termsErrorId}
-            role="alert"
-            aria-live="polite"
-            className="text-danger text-sm font-semibold empty:hidden"
-          >
-            {showErrors && draft.termsAccepted !== true ? t("termsError") : ""}
-          </p>
         </div>
       )}
     </div>

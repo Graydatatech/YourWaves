@@ -332,7 +332,7 @@ type StepValidator = (draft: DraftState) => StepError | null;
 
 /** Field-level checks the wizard uses to gate each step. */
 export const stepValidators: Record<
-  "date" | "time" | "location" | "details",
+  "date" | "time" | "location" | "details" | "terms",
   StepValidator
 > = {
   date: (draft) =>
@@ -392,12 +392,26 @@ export const stepValidators: Record<
         ? "needVerification"
         : "needVerificationEmail";
     }
-    // Only demanded when there are terms to agree to. `termsRequired` is set
-    // from /api/settings, so hiding the tick and requiring it cannot diverge.
-    if (draft.termsRequired && draft.termsAccepted !== true) {
-      return "needTerms";
-    }
     return null;
+  },
+
+  /**
+   * The agreement, as a step of its own rather than a tick under the phone
+   * number.
+   *
+   * It is the last thing before money moves, and it is the one field on the
+   * form that is a legal act rather than an answer. Buried at the bottom of
+   * "Details" it was something to scroll past; on its own screen, with the
+   * text above it, agreeing is a decision the customer visibly made.
+   *
+   * Only demanded when there are terms to agree to — `termsRequired` comes
+   * from /api/settings, and the step is hidden by `visibleSteps` in the same
+   * condition, so the wizard cannot show a step it does not require or require
+   * one it does not show.
+   */
+  terms: (draft) => {
+    if (!draft.termsRequired) return null;
+    return draft.termsAccepted === true ? null : "needTerms";
   },
 };
 
@@ -452,4 +466,23 @@ export const STEP_ORDER: readonly StepKey[] = [
   "time",
   "details",
   "location",
+  "terms",
 ];
+
+/**
+ * The steps this particular draft actually walks.
+ *
+ * STEP_ORDER is the canonical list; this is what the wizard counts, indexes
+ * and renders. They differ only over `terms`, which is dropped when the
+ * business has not written any — a fifth dot in the progress bar leading to a
+ * screen that says nothing is worse than four.
+ *
+ * Everything that navigates uses THIS, not STEP_ORDER. Mixing the two is how
+ * you get a "Next" button that advances to a step the progress bar does not
+ * show, or a final step whose button says "Next" because the array it counted
+ * was one longer than the array it rendered.
+ */
+export function visibleSteps(draft: DraftState): readonly StepKey[] {
+  if (draft.termsRequired) return STEP_ORDER;
+  return STEP_ORDER.filter((step) => step !== "terms");
+}

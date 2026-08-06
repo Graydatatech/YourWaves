@@ -6,6 +6,7 @@ import { PriceSummary } from "./PriceSummary";
 import {
   DateStepBody,
   DetailsStepBody,
+  TermsStepBody,
   LocationStepBody,
   TimeStepBody,
   type StepBodyProps,
@@ -37,8 +38,8 @@ function Block({
  * Two columns from 900px up: everything in one scrollable card on the left, the
  * price summary sticky on the right.
  *
- * No wizard here — with the vertical room available, showing all four sections
- * at once lets the customer see the whole commitment before filling it in, and
+ * No wizard here — with the vertical room available, showing every section at
+ * once lets the customer see the whole commitment before filling it in, and
  * jump straight to the field they want to change.
  */
 export function DesktopBooking({
@@ -51,14 +52,20 @@ export function DesktopBooking({
   const tSteps = useTranslations("booking.steps");
   const tErrors = useTranslations("booking.errors");
   const tHold = useTranslations("booking.hold");
-  const { allComplete, errorFor } = useBooking();
+  // `steps` decides whether the terms section exists at all, exactly as it
+  // does for the wizard — the two layouts must ask for the same things.
+  const { allComplete, errorFor, steps } = useBooking();
+  const showTerms = steps.includes("terms");
 
   // The first unmet requirement, so the button explains itself.
   const firstProblem =
     errorFor("date") ??
     errorFor("time") ??
     errorFor("details") ??
-    errorFor("location");
+    errorFor("location") ??
+    // Last, matching the order the sections are stacked in — the button should
+    // name the problem nearest the top of the form, not the newest one.
+    (showTerms ? errorFor("terms") : null);
 
   return (
     <div className="wide:grid-cols-[minmax(0,1fr)_360px] wide:items-start grid gap-8">
@@ -82,6 +89,11 @@ export function DesktopBooking({
         <Block title={tSteps("locationTitle")}>
           <LocationStepBody {...stepProps} />
         </Block>
+        {showTerms && (
+          <Block title={tSteps("termsTitle")}>
+            <TermsStepBody locale={stepProps.locale} />
+          </Block>
+        )}
       </div>
 
       {/* Sticky summary column. */}
