@@ -2,14 +2,25 @@ import createMiddleware from "next-intl/middleware";
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { routing } from "@/i18n/routing";
+import {
+  SITE_GATE_PATH,
+  isRequestAllowed,
+  isSiteLocked,
+} from "@/lib/siteGate";
 
 /**
  * Next.js 16 renamed the `middleware` file convention to `proxy`.
  * next-intl still ships its factory under `next-intl/middleware`; only the
  * Next.js-facing file name and export name changed.
  *
- * Two responsibilities, split by path:
+ * Three responsibilities, in this order:
  *
+ *   the pre-launch gate — while SITE_PASSWORD is set, the public site asks for
+ *                it first. FIRST, because a locked site must not answer
+ *                anything about itself: run the locale rewrite before the gate
+ *                and `/` still redirects to `/ar`, which tells a stranger the
+ *                site exists, is bilingual and defaults to Arabic. Unset, this
+ *                costs one string comparison per request.
  *   /admin/*   — the back-office gate. No session, no page. Enforced HERE
  *                rather than only in a layout, because a layout check can be
  *                defeated by a client-side route transition and does nothing
@@ -62,6 +73,25 @@ async function readSession(request: NextRequest, response: NextResponse) {
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  /**
+   * The pre-launch gate, before anything else.
+   *
+   * `isRequestAllowed` short-circuits to true when SITE_PASSWORD is unset, so
+   * this is inert on a launched site. Its exemption list — /api, /admin, /d,
+   * /r, static assets — is the part that matters and lives in one place, next
+   * to the reason for each entry.
+   */
+  if (isSiteLocked() && !isRequestAllowed(request)) {
+    const url = request.nextUrl.clone();
+    url.pathname = SITE_GATE_PATH;
+    url.search = "";
+    // Where they were going, so the form can put them back rather than
+    // dropping them on the home page. Only a path, never a full URL: an
+    // absolute value here would make this an open redirect.
+    if (pathname !== "/") url.searchParams.set("next", pathname);
+    return NextResponse.redirect(url);
+  }
 
   const isAdminApi = pathname.startsWith("/api/admin");
   const isAdminPage = pathname.startsWith("/admin");
@@ -155,15 +185,17 @@ export const config = {
    * next-intl would redirect it to /ar/api/bookings and break every customer
    * route. /api/admin/* still needs the session check, so it is matched
    * separately and dispatched by the branch above.
-   * `dev`, `d/` and `r/` are excluded: /dev/emails is a locale-less developer
-   * tool, /d/<token> is the public dispatch link and /r/<token> the survey
-   * link. Neither has a locale segment — each takes its language from the
-   * booking — so a locale rewrite would redirect a working link to a 404.
+   * `dev`, `d/`, `r/` and `access` are excluded: /dev/emails is a locale-less
+   * developer tool, /d/<token> is the public dispatch link, /r/<token> the
+   * survey link and /access the pre-launch gate. None has a locale segment —
+   * each takes its language from the booking, or shows both — so a locale
+   * rewrite would redirect a working link to a 404, and would bounce the gate
+   * page to /ar/access before anybody could type into it.
    */
   matcher: [
     // Customer API routes must NOT go through the locale rewrite, so `api` is
     // excluded here and the admin subtree is matched explicitly below.
-    "/((?!api|dev|d/|r/|_next|_vercel|.*\\..*).*)",
+    "/((?!api|dev|d/|r/|access|_next|_vercel|.*\\..*).*)",
     "/api/admin/:path*",
   ],
 };
