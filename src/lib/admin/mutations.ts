@@ -755,6 +755,34 @@ export async function setReviewPublished(
  * customer asks to have removed. The booking is untouched — this is their
  * words, not the record of their day.
  */
+/**
+ * Save the admin's translation of a published review.
+ *
+ * Writes ONLY comment_translation. `comment` is what the customer wrote and is
+ * never edited from here: it is the text an admin approved when they published
+ * it, and quietly rewriting it would make "published" mean something else.
+ *
+ * Blank clears it, which takes the review off the other language's page and
+ * leaves it on its own. That is the honest way to undo a bad translation —
+ * better than leaving prose nobody can read under a five-star rating.
+ */
+export async function setReviewTranslation(
+  session: AdminSession,
+  reviewId: string,
+  translation: string,
+): Promise<{ ok: boolean }> {
+  const value = translation.trim();
+  const rows = await asUser(session.userId, async (tx) => {
+    return tx<{ id: string }[]>`
+      UPDATE reviews
+         SET comment_translation = ${value === "" ? null : value}
+       WHERE id = ${reviewId}::uuid
+      RETURNING id
+    `;
+  });
+  return { ok: rows.length > 0 };
+}
+
 export async function deleteReview(
   session: AdminSession,
   reviewId: string,

@@ -26,6 +26,15 @@ export function ReviewsView({ reviews }: { reviews: ReviewRow[] }) {
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<ReviewRow | null>(null);
+  /**
+   * Drafts, keyed by review id.
+   *
+   * Uncontrolled-until-touched: a row that has not been edited reads straight
+   * from the server value, so a router.refresh() after publishing does not
+   * blow away a translation somebody is halfway through typing in the row
+   * above it.
+   */
+  const [drafts, setDrafts] = useState<Record<string, string>>({});
 
   async function setPublished(row: ReviewRow, isPublished: boolean) {
     setBusy(row.id);
@@ -40,6 +49,32 @@ export function ReviewsView({ reviews }: { reviews: ReviewRow[] }) {
         setError(t("reviews.failed"));
         return;
       }
+      router.refresh();
+    } catch {
+      setError(t("reviews.failed"));
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function saveTranslation(row: ReviewRow) {
+    setBusy(row.id);
+    setError(null);
+    try {
+      const response = await fetch(`/api/admin/reviews/${row.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ translation: drafts[row.id] ?? "" }),
+      });
+      if (!response.ok) {
+        setError(t("reviews.failed"));
+        return;
+      }
+      setDrafts((current) => {
+        const next = { ...current };
+        delete next[row.id];
+        return next;
+      });
       router.refresh();
     } catch {
       setError(t("reviews.failed"));
@@ -146,7 +181,76 @@ export function ReviewsView({ reviews }: { reviews: ReviewRow[] }) {
                 : ""}
             </p>
 
+            {/* The translation. Only worth asking for once there is something
+                to translate — a rating with no words is not a testimonial. */}
+            {row.comment ? (
+              <div className="mt-3">
+                <label
+                  htmlFor={`tr-${row.id}`}
+                  className="text-ink block text-xs font-bold"
+                >
+                  {row.locale === "ar"
+                    ? t("reviews.translationEn")
+                    : t("reviews.translationAr")}
+                </label>
+                <p className="text-muted-2 mt-0.5 mb-1.5 text-xs">
+                  {t("reviews.translationHint")}
+                </p>
+                <textarea
+                  id={`tr-${row.id}`}
+                  rows={3}
+                  maxLength={2000}
+                  dir="auto"
+                  value={drafts[row.id] ?? row.commentTranslation ?? ""}
+                  onChange={(event) =>
+                    setDrafts((current) => ({
+                      ...current,
+                      [row.id]: event.target.value,
+                    }))
+                  }
+                  className={cn(
+                    "border-border bg-surface rounded-input w-full border px-3 py-2",
+                    "text-ink text-[16px]",
+                    "focus-visible:border-accent focus-visible:outline-focus",
+                    "focus-visible:outline-2 focus-visible:outline-offset-0",
+                  )}
+                />
+
+                {/* Which sites this review is actually on. A published review
+                    with no translation is live on one page and absent from the
+                    other, and that is invisible from a "Published" pill. */}
+                <p className="text-muted-2 mt-1 text-xs">
+                  {row.isPublished
+                    ? row.commentTranslation
+                      ? t("reviews.showingBoth")
+                      : t("reviews.showingOne", {
+                          locale:
+                            row.locale === "ar"
+                              ? t("reviews.arabic")
+                              : t("reviews.english"),
+                        })
+                    : t("reviews.showingNone")}
+                </p>
+              </div>
+            ) : null}
+
             <div className="mt-3 flex flex-wrap items-center gap-3">
+              {row.comment &&
+              drafts[row.id] !== undefined &&
+              drafts[row.id] !== (row.commentTranslation ?? "") ? (
+                <button
+                  type="button"
+                  disabled={busy === row.id}
+                  onClick={() => saveTranslation(row)}
+                  className={cn(
+                    "rounded-pill bg-brand text-ink-deep min-h-11 px-4",
+                    "text-sm font-bold disabled:opacity-45",
+                  )}
+                >
+                  {t("reviews.saveTranslation")}
+                </button>
+              ) : null}
+
               <button
                 type="button"
                 disabled={busy === row.id || !row.comment}

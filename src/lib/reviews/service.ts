@@ -191,24 +191,37 @@ export type PublishedReview = {
  *
  * Only rows an admin has explicitly published, and only those with something to
  * quote — a five-star rating with no words is a number, not a testimonial.
+ *
+ * PER LOCALE since 0021. A review is shown on its own language's page from
+ * `comment`, and on the other language's page only once an admin has written
+ * `comment_translation`. Untranslated Arabic under "What guests say" on the
+ * English page reads as a broken site, not as an authentic quote.
  */
 export async function getPublishedReviews(
+  locale: "ar" | "en",
   limit = 6,
 ): Promise<PublishedReview[]> {
   try {
+    /*
+     * One text per review, chosen in SQL rather than in the mapper.
+     *
+     * Doing it here means the WHERE clause can filter on the SAME expression:
+     * a review with no translation is simply not returned for the other
+     * language, so it never counts against `limit` and never leaves a gap in a
+     * six-card carousel. Selecting both columns and filtering in TypeScript
+     * would ask for six and sometimes render three.
+     */
     const rows = await sql<
-      {
-        id: string;
-        rating: number;
-        comment: string;
-        author_name: string | null;
-      }[]
+      { id: string; rating: number; text: string; author_name: string | null }[]
     >`
-      SELECT id, rating, comment, author_name
+      SELECT id, rating, author_name,
+             CASE WHEN locale = ${locale} THEN comment
+                  ELSE comment_translation END AS text
         FROM reviews
        WHERE is_published
-         AND comment IS NOT NULL
-         AND btrim(comment) <> ''
+         AND btrim(COALESCE(
+               CASE WHEN locale = ${locale} THEN comment
+                    ELSE comment_translation END, '')) <> ''
        ORDER BY published_at DESC
        LIMIT ${limit}
     `;
@@ -216,7 +229,7 @@ export async function getPublishedReviews(
     return rows.map((row) => ({
       id: row.id,
       rating: row.rating,
-      comment: row.comment,
+      comment: row.text,
       authorName: row.author_name ?? "",
     }));
   } catch {

@@ -57,7 +57,9 @@ export async function Gallery() {
    * scroll-snap carousel and an IntersectionObserver — so it cannot read the
    * database itself.
    */
-  const reviews = await getPublishedReviews(6);
+  // Per locale since 0021: a review appears on the other language's page
+  // only once an admin has translated it.
+  const reviews = await getPublishedReviews(locale, 6);
   const testimonials = reviews.map((review) => ({
     id: review.id,
     quote: review.comment,

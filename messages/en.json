@@ -929,7 +929,16 @@
       "needsComment": "Nothing to quote — rating only.",
       "noComment": "Rating only, no comment left.",
       "ratingLabel": "Rated {rating} out of 5",
-      "failed": "That did not work. Please try again."
+      "failed": "That did not work. Please try again.",
+      "translationEn": "English translation",
+      "translationAr": "Arabic translation",
+      "translationHint": "Written by you, shown on the other language's site. Leave blank and this review appears only on its own.",
+      "saveTranslation": "Save translation",
+      "showingBoth": "Showing on both the Arabic and English pages.",
+      "showingOne": "Showing on the {locale} page only — add a translation to show it on both.",
+      "showingNone": "Not published, so it is on neither page.",
+      "arabic": "Arabic",
+      "english": "English"
     }
   },
   "jobSheet": {

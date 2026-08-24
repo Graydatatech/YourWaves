@@ -64,6 +64,13 @@ export type ReviewRow = {
   comment: string | null;
   authorName: string | null;
   authorArea: string | null;
+  /** The language the customer wrote in. */
+  locale: "ar" | "en";
+  /**
+   * The admin's rendering in the OTHER language. Null means this review shows
+   * only on its own language's page — see 0021.
+   */
+  commentTranslation: string | null;
   submittedAt: string | null;
   isPublished: boolean;
   createdAt: string;
