@@ -136,8 +136,12 @@ export function ReviewForm({
       </div>
 
       {/* Name -------------------------------------------------------------
-          Pre-filled from the booking and editable, because a person may be glad
-          to be quoted without their full name on a marketing page. */}
+          Pre-filled from the booking and editable: somebody may be glad to be
+          quoted without their full name on a marketing page. REQUIRED, though
+          — a published quote with nothing under it is the thing a reader
+          discounts fastest, and the pre-fill means the requirement almost
+          never bites. It is reachable only by clearing the box deliberately,
+          which is a choice worth stopping. */}
       <div className="mt-4">
         <label htmlFor="review-name" className="text-ink text-sm font-bold">
           {t("nameLabel")}{" "}
