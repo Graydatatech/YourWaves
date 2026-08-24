@@ -8,8 +8,11 @@
 -- `yw_dispatch_job` template, and neither exists — so no dispatch has ever been
 -- delivered. Email is provisioned and already carries every customer message.
 --
--- WHAT CHANGES: `booking_dispatch` records the address a job sheet was sent to,
--- and create_booking_dispatch enqueues on the `email` channel when it has one.
+-- WHAT CHANGES: `dispatch_recipients` gets its `email` column back — 0010
+-- dropped it on the grounds that dispatch was WhatsApp-only, which this
+-- migration is the undoing of — `booking_dispatch` records the address a job
+-- sheet was actually sent to, and create_booking_dispatch enqueues on the
+-- `email` channel when it has one.
 --
 -- WHAT DOES NOT: the capability token, its hash, the expiry, per-recipient
 -- revocation, the open log and the rate limits are exactly as 0010 built them.
@@ -22,6 +25,27 @@
 -- form now requires an email, so the fallback stops firing as soon as the list
 -- has been filled in once — it is a ramp, not a permanent second path.
 -- ---------------------------------------------------------------------------
+
+-- ---------------------------------------------------------------------------
+-- dispatch_recipients.email — PUT BACK.
+--
+-- 0000 created it on `drivers`. 0010 dropped it, with the reasoning "dispatch
+-- is WhatsApp-only now, and keeping it would imply an email path that no
+-- longer exists". That was true when it was written and is the exact opposite
+-- of true now: this migration builds that path.
+--
+-- Missing it is what broke /admin/settings and /admin/orders — both call
+-- getDrivers(), which selects d.email, and a Server Component that throws
+-- renders a numeric digest with the real message only in the server log. One
+-- dropped column, two screens down, no clue on either.
+-- ---------------------------------------------------------------------------
+ALTER TABLE "dispatch_recipients"
+    ADD COLUMN IF NOT EXISTS "email" text;
+--> statement-breakpoint
+
+COMMENT ON COLUMN "dispatch_recipients"."email" IS
+    'Where this person''s job sheets are sent. Required by the admin form since 0020; NULL only on rows that predate it, which fall back to WhatsApp.';
+--> statement-breakpoint
 
 ALTER TABLE "booking_dispatch"
     ADD COLUMN IF NOT EXISTS "email" text;
