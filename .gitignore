@@ -45,3 +45,5 @@ next-env.d.ts
 
 # Temporary hand-run SQL. Delete once applied; not part of the migration set.
 HOTFIX-run-in-supabase.sql
+REVIEWS-fix-and-remove.sql
+CHECK-reviews.sql
