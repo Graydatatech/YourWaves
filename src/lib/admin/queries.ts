@@ -484,7 +484,6 @@ export async function getBookingDetail(
         lng: row.lng,
         notes: row.notes,
         locale: row.locale,
-      consentToPublish: row.consent_to_publish === true,
         priceRental: row.price_rental,
         priceSetup: row.price_setup,
         priceDelivery: row.price_delivery,
@@ -666,6 +665,7 @@ export async function getReviews(session: AdminSession): Promise<ReviewRow[]> {
       authorArea: row.author_area,
       locale: row.locale,
       commentTranslation: row.comment_translation,
+      consentToPublish: row.consent_to_publish === true,
       submittedAt: row.submitted_at
         ? new Date(row.submitted_at).toISOString()
         : null,
