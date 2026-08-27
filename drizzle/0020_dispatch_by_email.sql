@@ -100,7 +100,17 @@ DECLARE
     v_payload   jsonb;
     v_outcome   text;
     v_email     text := NULLIF(btrim(COALESCE(p_email, '')), '');
-    v_channel   text;
+    /*
+     * notification_channel, NOT text.
+     *
+     * enqueue_notification's second parameter is the enum. An `unknown`
+     * literal — which is what 0010 passed when it hard-coded 'whatsapp' —
+     * coerces to an enum silently; a `text` VARIABLE does not, and Postgres
+     * reports it as "function enqueue_notification(uuid, text, unknown, ...)
+     * does not exist" rather than as a type error. The function it names is
+     * the one you are looking at, which is what makes it confusing.
+     */
+    v_channel   notification_channel;
     v_address   text;
 BEGIN
     SELECT * INTO v_booking FROM bookings WHERE id = p_booking_id;
