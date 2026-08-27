@@ -57,16 +57,21 @@ export async function PATCH(
       await setReviewTranslation(auth, resolved.data.id, parsed.data.translation)
     ).ok;
   }
+  let reason: string | undefined;
   if (ok && parsed.data.isPublished !== undefined) {
-    ok = (
-      await setReviewPublished(auth, resolved.data.id, parsed.data.isPublished)
-    ).ok;
+    const result = await setReviewPublished(
+      auth,
+      resolved.data.id,
+      parsed.data.isPublished,
+    );
+    ok = result.ok;
+    reason = result.reason;
   }
 
-  return Response.json(
-    { ok },
-    { status: ok ? 200 : 404, headers: NO_STORE },
-  );
+  // 409, not 404: "the customer did not agree to this" is a state, not a
+  // missing row, and the panel needs to tell them apart to say why.
+  const status = ok ? 200 : reason === "not_found" || !reason ? 404 : 409;
+  return Response.json({ ok, error: reason }, { status, headers: NO_STORE });
 }
 
 /** DELETE /api/admin/reviews/[id] — remove a comment entirely. */

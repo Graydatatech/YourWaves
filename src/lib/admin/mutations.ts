@@ -735,17 +735,34 @@ export async function setReviewPublished(
   session: AdminSession,
   reviewId: string,
   publish: boolean,
-): Promise<{ ok: boolean }> {
+): Promise<{ ok: boolean; reason?: "no_consent" | "no_comment" | "not_found" }> {
+  /*
+   * Through publish_review(), not a raw UPDATE.
+   *
+   * The consent check lives in the function so it cannot be skipped — by a
+   * hand-written statement, by a future admin tool, or by this file changing
+   * shape. §4h makes the same argument for transition_booking_status: the UI
+   * decides which buttons to draw, the database decides what is allowed.
+   *
+   * Unpublishing is never blocked by it. Taking something down must not be
+   * gated by the rule that governs putting it up.
+   */
   const rows = await asUser(session.userId, async (tx) => {
-    return tx<{ id: string }[]>`
-      UPDATE reviews
-         SET is_published = ${publish},
-             published_at = ${publish ? sql`now()` : sql`NULL`}
-       WHERE id = ${reviewId}::uuid
-      RETURNING id
+    return tx<{ ok: boolean; reason: string | null }[]>`
+      SELECT * FROM publish_review(${reviewId}::uuid, ${publish})
     `;
   });
-  return { ok: rows.length > 0 };
+
+  const result = rows[0];
+  if (!result?.ok) {
+    return {
+      ok: false,
+      reason:
+        (result?.reason as "no_consent" | "no_comment" | "not_found") ??
+        "not_found",
+    };
+  }
+  return { ok: true };
 }
 
 /**

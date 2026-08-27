@@ -938,7 +938,8 @@
       "showingOne": "Showing on the {locale} page only — add a translation to show it on both.",
       "showingNone": "Not published, so it is on neither page.",
       "arabic": "Arabic",
-      "english": "English"
+      "english": "English",
+      "noConsent": "The customer did not agree to this being published, so it cannot go on the site."
     }
   },
   "jobSheet": {
@@ -1011,18 +1012,20 @@
     "commentHint": "Optional, but it is the part we read.",
     "commentPlaceholder": "What worked, what didn't…",
     "nameLabel": "Name to show",
-    "nameHint": "Shown with your comment if we publish it, and nowhere else.",
+    "nameHint": "Shown with your comment if you agreed to publish it, and nowhere else.",
     "submit": "Send",
     "sending": "Sending…",
     "failed": "That did not send. Please try again.",
     "thanksTitle": "Thank you",
-    "thanksBody": "That is genuinely useful. If we would like to show your comment on our website, we will ask you first.",
+    "thanksBody": "That is genuinely useful. Your comment goes on our website only if you agreed to it.",
     "edit": "Change my answer",
-    "privacy": "Your rating and comment are only seen by our team unless you agree to it being published.",
+    "privacy": "Your rating and comment are seen only by our team, unless you agree above to it being published.",
     "expiredTitle": "This link has expired",
     "expiredBody": "Feedback links work for thirty days. If you would still like to tell us how it went, just reply to any of our emails.",
     "invalidTitle": "This link does not work",
     "invalidBody": "Please check the link in your email, or reply to it and we will sort it out.",
-    "nameRequired": "Enter the name to show with your review."
+    "nameRequired": "Enter the name to show with your review.",
+    "consentLabel": "You may show my comment on the YourWaves website.",
+    "consentHint": "Entirely optional. Leave it unticked and your comment stays between you and our team. You can change your mind by opening this link again."
   }
 }

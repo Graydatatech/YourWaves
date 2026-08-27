@@ -484,6 +484,7 @@ export async function getBookingDetail(
         lng: row.lng,
         notes: row.notes,
         locale: row.locale,
+      consentToPublish: row.consent_to_publish === true,
         priceRental: row.price_rental,
         priceSetup: row.price_setup,
         priceDelivery: row.price_delivery,
@@ -637,6 +638,7 @@ export async function getReviews(session: AdminSession): Promise<ReviewRow[]> {
         author_area: string | null;
         comment_translation: string | null;
         locale: "ar" | "en";
+        consent_to_publish: boolean;
         submitted_at: string | null;
         is_published: boolean;
         created_at: string;
@@ -645,7 +647,7 @@ export async function getReviews(session: AdminSession): Promise<ReviewRow[]> {
       SELECT r.id, b.reference,
              to_char(b.booking_date, 'YYYY-MM-DD') AS booking_date,
              r.rating, r.comment, r.comment_translation, r.author_name,
-             r.author_area, r.locale,
+             r.author_area, r.locale, r.consent_to_publish,
              r.submitted_at, r.is_published, r.created_at
         FROM reviews r
         JOIN bookings b ON b.id = r.booking_id

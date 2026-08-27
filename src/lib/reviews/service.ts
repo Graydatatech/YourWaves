@@ -34,6 +34,12 @@ export type ReviewInvite = {
   submitted: boolean;
   rating: number | null;
   comment: string | null;
+  /**
+   * Restored so the box comes back TICKED for somebody editing an answer they
+   * already consented to. Without it an edit would silently withdraw consent —
+   * they came back to fix a typo and left having taken their words down.
+   */
+  consentToPublish: boolean;
 };
 
 export type ResolveResult =
@@ -64,6 +70,7 @@ export async function resolveReviewToken(
       author_area: string | null;
       locale: string;
       submitted_at: string | null;
+      consent_to_publish: boolean;
       rating: number | null;
       comment: string | null;
       expired: boolean;
@@ -74,7 +81,7 @@ export async function resolveReviewToken(
            to_char(b.booking_date, 'YYYY-MM-DD') AS booking_date,
            b.customer_name,
            r.author_name, r.author_area, r.locale,
-           r.submitted_at, r.rating, r.comment,
+           r.submitted_at, r.consent_to_publish, r.rating, r.comment,
            (r.expires_at <= now()) AS expired
       FROM reviews r
       JOIN bookings b ON b.id = r.booking_id
@@ -96,6 +103,7 @@ export async function resolveReviewToken(
       authorArea: row.author_area,
       locale: row.locale === "en" ? "en" : "ar",
       submitted: row.submitted_at !== null,
+      consentToPublish: row.consent_to_publish === true,
       rating: row.rating,
       comment: row.comment,
     },
@@ -120,7 +128,13 @@ export type SubmitResult =
  */
 export async function submitReview(
   token: string,
-  input: { rating: number; comment: string; authorName: string },
+  input: {
+    rating: number;
+    comment: string;
+    authorName: string;
+    /** "You may show this on your website." Absent means no. */
+    consentToPublish: boolean;
+  },
 ): Promise<SubmitResult> {
   const rating = Math.round(Number(input.rating));
   if (!Number.isFinite(rating) || rating < 1 || rating > 5) {
@@ -130,11 +144,18 @@ export async function submitReview(
   const comment = input.comment.trim().slice(0, 2000);
   const authorName = input.authorName.trim().slice(0, 120);
 
+  const consent = input.consentToPublish === true;
+
   const rows = await sql<{ id: string }[]>`
     UPDATE reviews
        SET rating       = ${rating},
            comment      = ${comment === "" ? null : comment},
            author_name  = ${authorName === "" ? null : authorName},
+           consent_to_publish = ${consent},
+           -- Stamped when given, cleared when withdrawn, so the pair records a
+           -- decision rather than only a flag. An edit that unticks the box is
+           -- a withdrawal and reads as one.
+           consent_at   = ${consent ? sql`now()` : sql`NULL`},
            submitted_at = now(),
            -- Any edit returns it to the moderation queue.
            is_published = false,
@@ -192,6 +213,11 @@ export type PublishedReview = {
  * Only rows an admin has explicitly published, and only those with something to
  * quote — a five-star rating with no words is a number, not a testimonial.
  *
+ * CONSENT since 0022: the public read filters on consent_to_publish as well as
+ * is_published. publish_review() already refuses without it, so this is the
+ * second lock on the same door — a row that became published some other way
+ * still shows nobody anything.
+ *
  * PER LOCALE since 0021. A review is shown on its own language's page from
  * `comment`, and on the other language's page only once an admin has written
  * `comment_translation`. Untranslated Arabic under "What guests say" on the
@@ -219,6 +245,7 @@ export async function getPublishedReviews(
                   ELSE comment_translation END AS text
         FROM reviews
        WHERE is_published
+         AND consent_to_publish
          AND btrim(COALESCE(
                CASE WHEN locale = ${locale} THEN comment
                     ELSE comment_translation END, '')) <> ''

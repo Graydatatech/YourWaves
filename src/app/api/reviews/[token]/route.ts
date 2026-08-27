@@ -16,6 +16,12 @@ const bodySchema = z.object({
    * name, and it would render as an empty line under the quote.
    */
   authorName: z.string().trim().min(1).max(120),
+  /**
+   * Defaults to FALSE, not to whatever the client omitted. Silence is a no —
+   * consent that has to be withheld is not consent, and a body that simply
+   * leaves the field out must not read as agreement.
+   */
+  consentToPublish: z.boolean().default(false),
 });
 
 /**

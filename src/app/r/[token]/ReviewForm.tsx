@@ -30,6 +30,7 @@ export function ReviewForm({
   const [rating, setRating] = useState(invite.rating ?? 0);
   const [comment, setComment] = useState(invite.comment ?? "");
   const [name, setName] = useState(invite.authorName);
+  const [consent, setConsent] = useState(invite.consentToPublish);
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(invite.submitted);
   const [error, setError] = useState<string | null>(null);
@@ -44,7 +45,12 @@ export function ReviewForm({
       const response = await fetch(`/api/reviews/${token}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ rating, comment, authorName: name }),
+        body: JSON.stringify({
+          rating,
+          comment,
+          authorName: name,
+          consentToPublish: consent,
+        }),
       });
       if (!response.ok) {
         setError(t("failed"));
@@ -166,6 +172,45 @@ export function ReviewForm({
           )}
         />
       </div>
+
+      {/* Consent ------------------------------------------------------------
+          Unticked by default and never required: the survey's job is to learn
+          how the day went, and making publication the price of answering would
+          buy a worse answer. Somebody who says nothing here has said no.
+
+          Only asked once there is something to publish — offering to show a
+          comment that has not been written is a question about nothing. */}
+      {comment.trim() !== "" && (
+        <div
+          className={cn(
+            "rounded-card border-border bg-surface mt-6 border p-4",
+          )}
+        >
+          <div className="flex items-start gap-3">
+            <input
+              id="review-consent"
+              type="checkbox"
+              checked={consent}
+              onChange={(event) => setConsent(event.target.checked)}
+              // 20px: a default checkbox is ~13px, under the tap minimum, and
+              // this is the one control on the page with a consequence beyond
+              // our own inbox.
+              className={cn(
+                "accent-accent mt-0.5 size-5 shrink-0 cursor-pointer",
+                "focus-visible:outline-focus focus-visible:outline-2",
+                "focus-visible:outline-offset-2",
+              )}
+            />
+            <label
+              htmlFor="review-consent"
+              className="text-ink cursor-pointer text-[15px] leading-relaxed font-semibold"
+            >
+              {t("consentLabel")}
+            </label>
+          </div>
+          <p className="text-muted-2 mt-2 text-sm">{t("consentHint")}</p>
+        </div>
+      )}
 
       <button
         type="button"

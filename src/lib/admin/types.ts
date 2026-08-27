@@ -67,6 +67,11 @@ export type ReviewRow = {
   /** The language the customer wrote in. */
   locale: "ar" | "en";
   /**
+   * The customer ticked "you may show this on your website". Publishing is
+   * refused without it — in the SQL, not only here.
+   */
+  consentToPublish: boolean;
+  /**
    * The admin's rendering in the OTHER language. Null means this review shows
    * only on its own language's page — see 0021.
    */

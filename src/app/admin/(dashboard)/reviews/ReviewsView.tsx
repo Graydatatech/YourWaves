@@ -219,17 +219,30 @@ export function ReviewsView({ reviews }: { reviews: ReviewRow[] }) {
                 {/* Which sites this review is actually on. A published review
                     with no translation is live on one page and absent from the
                     other, and that is invisible from a "Published" pill. */}
-                <p className="text-muted-2 mt-1 text-xs">
-                  {row.isPublished
-                    ? row.commentTranslation
-                      ? t("reviews.showingBoth")
-                      : t("reviews.showingOne", {
-                          locale:
-                            row.locale === "ar"
-                              ? t("reviews.arabic")
-                              : t("reviews.english"),
-                        })
-                    : t("reviews.showingNone")}
+                <p
+                  className={cn(
+                    "mt-1 text-xs",
+                    row.consentToPublish
+                      ? "text-muted-2"
+                      : "text-danger font-semibold",
+                  )}
+                >
+                  {/* Read top to bottom: no consent beats everything, then
+                      not published, then translated or not. Flattened out of a
+                      three-level nested ternary whose indentation said
+                      something different from what it did. */}
+                  {!row.consentToPublish
+                    ? t("reviews.noConsent")
+                    : !row.isPublished
+                      ? t("reviews.showingNone")
+                      : row.commentTranslation
+                        ? t("reviews.showingBoth")
+                        : t("reviews.showingOne", {
+                            locale:
+                              row.locale === "ar"
+                                ? t("reviews.arabic")
+                                : t("reviews.english"),
+                          })}
                 </p>
               </div>
             ) : null}
@@ -251,9 +264,17 @@ export function ReviewsView({ reviews }: { reviews: ReviewRow[] }) {
                 </button>
               ) : null}
 
+              {/* Publishing needs the customer's yes. Unpublishing never
+                  does — taking something down must not be gated by the rule
+                  that governs putting it up. The SQL refuses either way; this
+                  only stops the button offering something that will fail. */}
               <button
                 type="button"
-                disabled={busy === row.id || !row.comment}
+                disabled={
+                  busy === row.id ||
+                  !row.comment ||
+                  (!row.isPublished && !row.consentToPublish)
+                }
                 onClick={() => setPublished(row, !row.isPublished)}
                 className={cn(
                   "rounded-pill min-h-11 px-4 text-sm font-bold",
