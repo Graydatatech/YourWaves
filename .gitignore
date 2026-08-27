@@ -42,3 +42,6 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 .dev-outbox/
+
+# Temporary hand-run SQL. Delete once applied; not part of the migration set.
+HOTFIX-run-in-supabase.sql

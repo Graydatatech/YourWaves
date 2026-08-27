@@ -667,6 +667,14 @@ function DriversPanel({ drivers }: { drivers: DriverRow[] }) {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<DriverRow | null>(null);
+  /**
+   * Edited addresses, keyed by recipient id.
+   *
+   * A row untouched by this session reads straight from the server value, so
+   * the router.refresh() after toggling somebody's default flag does not wipe
+   * an address being typed two rows down.
+   */
+  const [emailDrafts, setEmailDrafts] = useState<Record<string, string>>({});
 
   async function addDriver() {
     if (!fullName.trim() || !phone.trim()) return;
@@ -737,6 +745,41 @@ function DriversPanel({ drivers }: { drivers: DriverRow[] }) {
    * anything, so it is a single tap on the row rather than buried in an edit
    * form.
    */
+  /**
+   * Save one recipient's address.
+   *
+   * The add form asks for an email and the API requires it, but every row that
+   * existed before 0020 has none — the column was dropped in 0010 and only
+   * just restored. Without this they could only be fixed by deleting and
+   * re-adding, which loses their job history and is refused outright while
+   * they are mid-job.
+   */
+  async function saveEmail(driver: DriverRow) {
+    const value = (emailDrafts[driver.id] ?? "").trim();
+    setPending(true);
+    setError(null);
+
+    const response = await fetch(`/api/admin/recipients/${driver.id}`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email: value }),
+    });
+
+    setPending(false);
+
+    if (!response.ok) {
+      setError(t("settings.driverEmailInvalid"));
+      return;
+    }
+
+    setEmailDrafts((current) => {
+      const next = { ...current };
+      delete next[driver.id];
+      return next;
+    });
+    router.refresh();
+  }
+
   async function toggleDefault(driver: DriverRow) {
     setError(null);
     const response = await fetch(`/api/admin/recipients/${driver.id}`, {
@@ -802,19 +845,53 @@ function DriversPanel({ drivers }: { drivers: DriverRow[] }) {
                   ? ` · ${t("settings.driverJobs", { count: driver.activeJobs })}`
                   : ""}
               </p>
-              {/* The address, or a warning that there is none. A recipient
-                  added before 0020 still falls back to WhatsApp, which nothing
-                  has ever delivered — so "no email" is the one thing about a
-                  row that needs to be visible without opening anything. */}
-              <p
-                className={cn(
-                  "truncate text-xs",
-                  driver.email ? "text-muted-2" : "text-danger font-semibold",
-                )}
-                dir="ltr"
-              >
-                {driver.email ?? t("settings.driverEmailMissing")}
-              </p>
+              {/* The address, EDITABLE in place. A recipient added before
+                  0020 has none and falls back to WhatsApp, which has never
+                  delivered anything — so this is both the one thing about a
+                  row that must be visible without opening it, and the one
+                  thing that must be fixable without deleting the person. */}
+              <div className="mt-1 flex items-center gap-2">
+                <input
+                  type="email"
+                  inputMode="email"
+                  dir="ltr"
+                  aria-label={t("settings.driverEmail")}
+                  placeholder={t("settings.driverEmailMissing")}
+                  value={emailDrafts[driver.id] ?? driver.email ?? ""}
+                  onChange={(event) =>
+                    setEmailDrafts((current) => ({
+                      ...current,
+                      [driver.id]: event.target.value,
+                    }))
+                  }
+                  className={cn(
+                    "rounded-input bg-surface min-h-11 min-w-0 flex-1 border px-3",
+                    // 16px, or iOS Safari zooms the viewport on focus.
+                    "text-ink text-[16px]",
+                    "focus-visible:border-accent focus-visible:outline-focus",
+                    "focus-visible:outline-2 focus-visible:outline-offset-0",
+                    driver.email
+                      ? "border-border"
+                      : "border-danger placeholder:text-danger",
+                  )}
+                />
+                {/* Appears only once the value differs from what is stored, so
+                    a row nobody has touched carries no button to ignore. */}
+                {emailDrafts[driver.id] !== undefined &&
+                emailDrafts[driver.id] !== (driver.email ?? "") ? (
+                  <button
+                    type="button"
+                    disabled={pending}
+                    onClick={() => saveEmail(driver)}
+                    className={cn(
+                      "rounded-pill bg-brand text-ink-deep min-h-11 shrink-0 px-3",
+                      "text-xs font-bold disabled:opacity-45",
+                    )}
+                  >
+                    {t("common.save")}
+                  </button>
+                ) : null}
+              </div>
               <button
                 type="button"
                 onClick={() => toggleDefault(driver)}
