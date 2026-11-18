@@ -41,10 +41,18 @@ export function TermsStep({ locale, showErrors }: TermsStepProps) {
   const [terms, setTerms] = useState<Loaded | null>(null);
   const [failed, setFailed] = useState(false);
 
-  useEffect(() => {
-    let cancelled = false;
+  // A language switch clears the previous locale's text. Done during render
+  // (React's "adjust state when a prop changes" pattern) rather than inside
+  // the effect, so the stale terms are never painted for a frame.
+  const [loadedLocale, setLoadedLocale] = useState(locale);
+  if (loadedLocale !== locale) {
+    setLoadedLocale(locale);
     setTerms(null);
     setFailed(false);
+  }
+
+  useEffect(() => {
+    let cancelled = false;
     fetch(`/api/terms?locale=${locale}`)
       .then((response) => {
         if (!response.ok) throw new Error(String(response.status));
