@@ -1,9 +1,11 @@
 "use client";
 
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { cn } from "@/lib/cn";
+import logo from "../../../public/brand/logo.png";
 
 /**
  * Navigation, in two shapes.
@@ -164,7 +166,8 @@ export function AdminSidebar({ email }: { email: string | null }) {
       className="border-border bg-surface wide:block hidden w-60 shrink-0 border-e"
     >
       <div className="sticky top-0 flex h-dvh flex-col p-4">
-        <div className="px-2 pt-1 pb-5">
+        <div className="flex items-center gap-2 px-2 pt-1 pb-5">
+          <Image src={logo} alt="" sizes="48px" className="h-6 w-auto" />
           <span className="text-ink-deep text-[15px] font-extrabold tracking-tight">
             {t("nav.brand")}
           </span>
