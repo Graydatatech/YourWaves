@@ -322,6 +322,7 @@ export type SettingsPatch = {
   footer?: FooterContent;
   faq?: FaqItem[];
   gallery?: GalleryImage[];
+  siteOpen?: boolean;
 };
 
 /**
@@ -357,6 +358,7 @@ const SETTINGS_COLUMNS: Record<keyof SettingsPatch, string> = {
   footer: "footer",
   faq: "faq",
   gallery: "gallery",
+  siteOpen: "site_open",
 };
 
 /**

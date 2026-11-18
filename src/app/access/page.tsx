@@ -1,6 +1,8 @@
+import Image from "next/image";
 import { redirect } from "next/navigation";
-import { isSiteLocked } from "@/lib/siteGate";
+import { isGateActive } from "@/lib/siteGateServer";
 import { AccessForm } from "./AccessForm";
+import logo from "../../../public/brand/logo.png";
 
 /**
  * The pre-launch gate.
@@ -38,16 +40,20 @@ export default async function AccessPage({
 }) {
   // Nothing to ask for once the site is open. Somebody who bookmarked this
   // page should land on the site, not on a form with no purpose.
-  if (!isSiteLocked()) redirect("/");
+  // Also once an admin has opened it from Settings (migration 0023).
+  if (!(await isGateActive())) redirect("/");
 
   const next = safeNext((await searchParams).next);
 
   return (
     <main className="grid min-h-dvh place-items-center px-6 py-16">
       <div className="w-full max-w-sm">
-        <p
-          aria-hidden="true"
-          className="bg-brand mx-auto size-14 rounded-2xl"
+        <Image
+          src={logo}
+          alt="YourWaves"
+          priority
+          sizes="96px"
+          className="mx-auto h-14 w-auto"
         />
 
         <h1 className="text-ink mt-6 text-center text-2xl font-extrabold">

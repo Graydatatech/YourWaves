@@ -82,7 +82,7 @@ export async function proxy(request: NextRequest) {
    * /r, static assets — is the part that matters and lives in one place, next
    * to the reason for each entry.
    */
-  if (isSiteLocked() && !isRequestAllowed(request)) {
+  if (isSiteLocked() && !(await isRequestAllowed(request))) {
     const url = request.nextUrl.clone();
     url.pathname = SITE_GATE_PATH;
     url.search = "";

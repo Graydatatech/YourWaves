@@ -87,7 +87,7 @@ describe("verification token", () => {
     const token = issueOtpToken(PHONE_A);
     const verdict = verifyOtpToken(token, PHONE_A);
     expect(verdict.valid).toBe(true);
-    if (verdict.valid) expect(verdict.phone).toBe(PHONE_A);
+    if (verdict.valid) expect(verdict.subject).toBe(PHONE_A);
   });
 
   it("REFUSES a token issued for a different phone", () => {
@@ -277,7 +277,7 @@ describe("verification flow", () => {
     const { verifyOtp } = await import("@/lib/otp/service");
     await seedCode(PHONE_A, "4821");
 
-    const outcome = await verifyOtp({ phone: PHONE_A, code: "4821" });
+    const outcome = await verifyOtp({ destination: PHONE_A, code: "4821" });
     expect(outcome.ok).toBe(true);
 
     const rows = await testSql<{ consumed_at: Date | null }[]>`
@@ -290,7 +290,7 @@ describe("verification flow", () => {
     const { verifyOtp } = await import("@/lib/otp/service");
     await seedCode(PHONE_A, "4821", { expired: true });
 
-    const outcome = await verifyOtp({ phone: PHONE_A, code: "4821" });
+    const outcome = await verifyOtp({ destination: PHONE_A, code: "4821" });
     expect(outcome.ok).toBe(false);
     if (!outcome.ok) expect(outcome.reason).toBe("expired");
   });
@@ -301,13 +301,13 @@ describe("verification flow", () => {
 
     // Five wrong guesses.
     for (let i = 0; i < MAX_ATTEMPTS; i++) {
-      const outcome = await verifyOtp({ phone: PHONE_A, code: "0000" });
+      const outcome = await verifyOtp({ destination: PHONE_A, code: "0000" });
       expect(outcome.ok).toBe(false);
     }
 
     // The 6th is refused outright — and even the CORRECT code no longer works,
     // which is the property that matters: the code is burned, not just counted.
-    const sixth = await verifyOtp({ phone: PHONE_A, code: "4821" });
+    const sixth = await verifyOtp({ destination: PHONE_A, code: "4821" });
     expect(sixth.ok).toBe(false);
     if (!sixth.ok) {
       expect(["too_many_attempts", "expired"]).toContain(sixth.reason);
@@ -318,14 +318,14 @@ describe("verification flow", () => {
     const { verifyOtp } = await import("@/lib/otp/service");
     await seedCode(PHONE_A, "4821");
 
-    const first = await verifyOtp({ phone: PHONE_A, code: "1111" });
+    const first = await verifyOtp({ destination: PHONE_A, code: "1111" });
     expect(first.ok).toBe(false);
     if (!first.ok) expect(first.attemptsRemaining).toBe(MAX_ATTEMPTS - 1);
   });
 
   it("reports no_code when nothing was issued", async () => {
     const { verifyOtp } = await import("@/lib/otp/service");
-    const outcome = await verifyOtp({ phone: PHONE_B, code: "4821" });
+    const outcome = await verifyOtp({ destination: PHONE_B, code: "4821" });
     expect(outcome.ok).toBe(false);
     if (!outcome.ok) expect(outcome.reason).toBe("no_code");
   });
@@ -333,7 +333,7 @@ describe("verification flow", () => {
   it("does not let phone A's code verify phone B", async () => {
     const { verifyOtp } = await import("@/lib/otp/service");
     await seedCode(PHONE_A, "4821");
-    const outcome = await verifyOtp({ phone: PHONE_B, code: "4821" });
+    const outcome = await verifyOtp({ destination: PHONE_B, code: "4821" });
     expect(outcome.ok).toBe(false);
   });
 });

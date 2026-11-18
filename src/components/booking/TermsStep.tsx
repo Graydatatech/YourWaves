@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useRef, useState, type UIEvent } from "react";
 import { useTranslations } from "next-intl";
 import { cn } from "@/lib/cn";
 import { Link } from "@/i18n/navigation";
@@ -37,14 +37,29 @@ export function TermsStep({ locale, showErrors }: TermsStepProps) {
   const boxId = useId();
   const checkboxId = useId();
   const errorId = `${checkboxId}-error`;
+  const hintId = `${checkboxId}-hint`;
+  const boxRef = useRef<HTMLDivElement>(null);
 
   const [terms, setTerms] = useState<Loaded | null>(null);
   const [failed, setFailed] = useState(false);
+  // Whether the bottom of the terms box has been on screen. The checkbox is
+  // locked until it has: agreeing is meant to follow reading, and a box the
+  // customer never scrolled is a box they never read.
+  const [reachedEnd, setReachedEnd] = useState(false);
+
+  // A language switch clears the previous locale's text. Done during render
+  // (React's "adjust state when a prop changes" pattern) rather than inside
+  // the effect, so the stale terms are never painted for a frame.
+  const [loadedLocale, setLoadedLocale] = useState(locale);
+  if (loadedLocale !== locale) {
+    setLoadedLocale(locale);
+    setTerms(null);
+    setFailed(false);
+    setReachedEnd(false);
+  }
 
   useEffect(() => {
     let cancelled = false;
-    setTerms(null);
-    setFailed(false);
     fetch(`/api/terms?locale=${locale}`)
       .then((response) => {
         if (!response.ok) throw new Error(String(response.status));
@@ -67,9 +82,34 @@ export function TermsStep({ locale, showErrors }: TermsStepProps) {
     // survives the navigation while this component remounts.
   }, [locale]);
 
+  // Terms short enough not to scroll have no end to reach, so they count as
+  // read as soon as they render. A ResizeObserver rather than a measurement in
+  // an effect: it fires once on observe (covering the first render of the
+  // text) and again on rotation or a font swap that changes the height, and a
+  // setState from its callback is a subscription, not a cascading render.
+  useEffect(() => {
+    const box = boxRef.current;
+    if (!box || terms === null) return;
+    const observer = new ResizeObserver(() => {
+      if (atEnd(box)) setReachedEnd(true);
+    });
+    observer.observe(box);
+    return () => observer.disconnect();
+  }, [terms]);
+
+  const onScroll = (event: UIEvent<HTMLDivElement>) => {
+    if (!reachedEnd && atEnd(event.currentTarget)) setReachedEnd(true);
+  };
+
   const accepted = draft.termsAccepted === true;
   const unread = terms === null && !failed;
   const empty = failed || (terms !== null && terms.paragraphs.length === 0);
+  // Locked only while there is text to read and it has not been read. A
+  // failed or empty load is NOT gated, as before: blocking every payment on
+  // the terms endpoint would turn an outage there into an outage of bookings,
+  // and the "unavailable" copy already tells the customer what to do. An
+  // already-ticked box stays enabled so it can be unticked.
+  const locked = !accepted && !empty && (unread || !reachedEnd);
 
   return (
     <div className="space-y-5">
@@ -83,6 +123,8 @@ export function TermsStep({ locale, showErrors }: TermsStepProps) {
           announces what it is rather than reading an unnamed scroll box. */}
       <div
         id={boxId}
+        ref={boxRef}
+        onScroll={onScroll}
         role="region"
         aria-label={t("boxLabel")}
         tabIndex={0}
@@ -150,25 +192,42 @@ export function TermsStep({ locale, showErrors }: TermsStepProps) {
             id={checkboxId}
             type="checkbox"
             checked={accepted}
+            disabled={locked}
             onChange={(event) => patch({ termsAccepted: event.target.checked })}
-            aria-describedby={showErrors && !accepted ? errorId : undefined}
+            aria-describedby={
+              [locked && hintId, showErrors && !accepted && errorId]
+                .filter(Boolean)
+                .join(" ") || undefined
+            }
             aria-invalid={(showErrors && !accepted) || undefined}
             // 20px and a 44px hit area from the label wrapping it: a default
             // checkbox is ~13px, which is under the tap target minimum and is
             // the single control this whole step exists for.
             className={cn(
               "accent-accent mt-0.5 size-5 shrink-0 cursor-pointer",
+              "disabled:cursor-not-allowed",
               "focus-visible:outline-focus focus-visible:outline-2",
               "focus-visible:outline-offset-2",
             )}
           />
           <label
             htmlFor={checkboxId}
-            className="text-ink cursor-pointer text-[15px] leading-relaxed font-semibold"
+            className={cn(
+              "text-[15px] leading-relaxed font-semibold",
+              locked
+                ? "text-muted-2 cursor-not-allowed"
+                : "text-ink cursor-pointer",
+            )}
           >
             {t("agree")}
           </label>
         </div>
+
+        {locked && (
+          <p id={hintId} className="text-muted-2 mt-2 text-sm">
+            {t("scrollToAgree")}
+          </p>
+        )}
 
         <p
           id={errorId}
@@ -183,4 +242,9 @@ export function TermsStep({ locale, showErrors }: TermsStepProps) {
       <p className="text-muted-2 text-sm">{t("nextIsPayment")}</p>
     </div>
   );
+}
+
+/** Within 8px of the bottom: sub-pixel scroll positions never quite reach it. */
+function atEnd(box: HTMLElement): boolean {
+  return box.scrollTop + box.clientHeight >= box.scrollHeight - 8;
 }

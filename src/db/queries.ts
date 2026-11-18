@@ -43,6 +43,22 @@ export async function getSettings(): Promise<SettingsRow> {
 }
 
 /**
+ * Whether an admin has opened the site past the pre-launch gate (0023).
+ *
+ * Read through `to_jsonb(settings)` rather than naming the column, so a
+ * database that has not had 0023 applied answers "not open" instead of
+ * raising — the gate then behaves exactly as it did before the column existed.
+ */
+export async function getSiteOpen(): Promise<boolean> {
+  const rows = await sql<{ open: boolean | null }[]>`
+    SELECT (to_jsonb(s) ->> 'site_open')::boolean AS open
+      FROM settings s
+     WHERE id = 1
+  `;
+  return rows[0]?.open === true;
+}
+
+/**
  * Days occupied by a booking, within an inclusive date range.
  *
  * Reads the `active_bookings` view rather than the table, so the definition of

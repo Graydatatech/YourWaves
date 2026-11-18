@@ -19,6 +19,14 @@ import { createHmac, timingSafeEqual } from "node:crypto";
  *
  * `node:crypto` is available because Next 16's proxy runs on the Node.js
  * runtime and cannot be set to edge — see the gotchas in CLAUDE.md §2.
+ *
+ * THE ADMIN SWITCH (migration 0023). With SITE_PASSWORD set, an admin can
+ * still open the site from Settings without touching the environment:
+ * `settings.site_open = true` makes the gate stand aside. The password stays
+ * in the environment and never enters the database; the switch only decides
+ * whether it is asked for. Unsetting SITE_PASSWORD still opens the site
+ * unconditionally, and is the better final state once launched — it takes the
+ * status check below off the request path entirely.
  */
 
 export const SITE_GATE_COOKIE = "yw_site_access";
@@ -86,6 +94,67 @@ function isExempt(pathname: string): boolean {
   );
 }
 
+/**
+ * Whether an admin has opened the site, as the proxy sees it.
+ *
+ * The proxy must not query the database (Next 16 docs: it runs on every
+ * route, prefetches included) and cannot import the `server-only` DB client,
+ * so it asks GET /api/site-status and keeps the answer for 30s per instance.
+ * After the button is pressed, every instance follows within that window.
+ *
+ * Only reached for a visitor on a gated path WITHOUT a valid gate cookie — see
+ * the order in isRequestAllowed — so the client's own browsing never waits on
+ * it, and static assets, /api and /admin never reach it at all.
+ *
+ * On failure: the last known answer, or CLOSED if there is none. Closed is the
+ * pre-launch default, and showing the password page during a database outage
+ * is a smaller fault than briefly showing an unfinished site — the booking
+ * flow could not work in that outage anyway. The failure is memoised for the
+ * same 30s, so an outage is not retried on every request.
+ */
+const SITE_OPEN_TTL_MS = 30_000;
+let siteOpenCache: { open: boolean; at: number } | null = null;
+let siteOpenInflight: Promise<boolean> | null = null;
+
+export async function isSiteOpen(
+  origin: string,
+  fetchImpl: typeof fetch = fetch,
+): Promise<boolean> {
+  if (siteOpenCache && Date.now() - siteOpenCache.at < SITE_OPEN_TTL_MS) {
+    return siteOpenCache.open;
+  }
+  // One request per instance at a time: a burst of cold visitors shares it.
+  if (siteOpenInflight) return siteOpenInflight;
+
+  siteOpenInflight = (async () => {
+    let open = siteOpenCache?.open ?? false;
+    try {
+      const response = await fetchImpl(`${origin}/api/site-status`, {
+        cache: "no-store",
+        signal: AbortSignal.timeout(2_000),
+      });
+      if (response.ok) {
+        const body = (await response.json()) as { open?: unknown };
+        open = body.open === true;
+      }
+    } catch {
+      // Keep `open` as the last known answer.
+    }
+    siteOpenCache = { open, at: Date.now() };
+    return open;
+  })().finally(() => {
+    siteOpenInflight = null;
+  });
+
+  return siteOpenInflight;
+}
+
+/** Test hook: forget the memoised answer. */
+export function resetSiteOpenCache(): void {
+  siteOpenCache = null;
+  siteOpenInflight = null;
+}
+
 /** Constant-time compare that does not leak length through an early return. */
 function sameSecret(candidate: string): boolean {
   const expected = Buffer.from(secret(), "utf8");
@@ -125,7 +194,10 @@ export function isValidGateToken(
   const expected = sign(expiry);
   if (expected.length !== signature.length) return false;
   if (
-    !timingSafeEqual(Buffer.from(expected, "utf8"), Buffer.from(signature, "utf8"))
+    !timingSafeEqual(
+      Buffer.from(expected, "utf8"),
+      Buffer.from(signature, "utf8"),
+    )
   ) {
     return false;
   }
@@ -154,18 +226,27 @@ export function hasValidBasicAuth(header: string | null): boolean {
   return sameSecret(decoded.slice(separator + 1));
 }
 
-/** Whether this request may pass. */
-export function isRequestAllowed(request: {
-  nextUrl: { pathname: string };
-  headers: { get(name: string): string | null };
-  cookies: { get(name: string): { value: string } | undefined };
-}): boolean {
+/**
+ * Whether this request may pass.
+ *
+ * Cheapest checks first: the exemption list and the cookie are string work,
+ * and only a request that fails both pays for the status check.
+ */
+export async function isRequestAllowed(
+  request: {
+    nextUrl: { pathname: string; origin: string };
+    headers: { get(name: string): string | null };
+    cookies: { get(name: string): { value: string } | undefined };
+  },
+  fetchImpl: typeof fetch = fetch,
+): Promise<boolean> {
   if (!isSiteLocked()) return true;
   if (isExempt(request.nextUrl.pathname)) return true;
   if (isValidGateToken(request.cookies.get(SITE_GATE_COOKIE)?.value)) {
     return true;
   }
-  return hasValidBasicAuth(request.headers.get("authorization"));
+  if (hasValidBasicAuth(request.headers.get("authorization"))) return true;
+  return isSiteOpen(request.nextUrl.origin, fetchImpl);
 }
 
 /** Verifies what somebody typed into the form. */

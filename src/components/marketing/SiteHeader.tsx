@@ -18,8 +18,10 @@ import { NAV_ITEMS } from "./navItems";
  *   3. below 900px the link list and the desktop CTA are removed from the DOM
  *      (not merely hidden), so they cannot contribute width at all.
  *
- * Below 900px the row is logo | language pill | hamburger, which measures about
- * 250px at its natural size and therefore still fits a 320px viewport.
+ * Below 900px the row is logo | language pill | hamburger, which measured
+ * ~309px in English at 320px once the logo was added: ~11px of slack. The row
+ * gap is 8px below `sm` for that reason — it sits either side of an invisible
+ * spacer, so it costs width without being seen. See the note in BrandMark.
  */
 export function SiteHeader() {
   const t = useTranslations("nav");
@@ -33,7 +35,7 @@ export function SiteHeader() {
         "border-b border-[rgba(11,42,61,0.09)]",
       ].join(" ")}
     >
-      <div className="shell flex h-16 flex-nowrap items-center gap-3">
+      <div className="shell flex h-16 flex-nowrap items-center gap-2 sm:gap-3">
         {/* Brand ------------------------------------------------------- */}
         <a
           href="#top"

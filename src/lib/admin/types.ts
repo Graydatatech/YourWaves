@@ -265,5 +265,7 @@ export type AdminSettings = {
   footer: FooterContent;
   faq: FaqItem[];
   gallery: GalleryImage[];
+  /** The admin's "open the website" switch; see src/lib/siteGate.ts. */
+  siteOpen: boolean;
   updatedAt: string;
 };
