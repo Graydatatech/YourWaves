@@ -1,6 +1,6 @@
 import Image from "next/image";
 import { redirect } from "next/navigation";
-import { isSiteLocked } from "@/lib/siteGate";
+import { isGateActive } from "@/lib/siteGateServer";
 import { AccessForm } from "./AccessForm";
 import logo from "../../../public/brand/logo.png";
 
@@ -40,7 +40,8 @@ export default async function AccessPage({
 }) {
   // Nothing to ask for once the site is open. Somebody who bookmarked this
   // page should land on the site, not on a form with no purpose.
-  if (!isSiteLocked()) redirect("/");
+  // Also once an admin has opened it from Settings (migration 0023).
+  if (!(await isGateActive())) redirect("/");
 
   const next = safeNext((await searchParams).next);
 

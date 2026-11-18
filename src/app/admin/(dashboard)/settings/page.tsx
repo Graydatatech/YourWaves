@@ -7,10 +7,12 @@ import {
 } from "@/lib/admin/queries";
 import { adminT } from "@/lib/admin/intl";
 import { readPaymentsStatus } from "@/lib/payments/status";
+import { isSiteLocked } from "@/lib/siteGate";
 import { SettingsForm } from "./SettingsForm";
 import { PaymentsPanel } from "./PaymentsPanel";
 import { AdminsPanel } from "./AdminsPanel";
 import { GalleryPanel } from "./GalleryPanel";
+import { SitePanel } from "./SitePanel";
 
 export const dynamic = "force-dynamic";
 
@@ -47,6 +49,12 @@ export default async function AdminSettingsPage() {
           of action from typing a price, and sharing a Save button would let an
           admin adding a photo commit a half-edited day rate. */}
       <GalleryPanel images={settings.gallery} />
+
+      {/* Above payments: on launch day this is the first thing looked for. */}
+      <SitePanel
+        passwordConfigured={isSiteLocked()}
+        open={settings.siteOpen}
+      />
 
       <PaymentsPanel status={readPaymentsStatus()} />
 

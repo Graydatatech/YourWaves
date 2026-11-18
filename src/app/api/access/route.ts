@@ -1,10 +1,10 @@
 import { cookies } from "next/headers";
 import { z } from "zod";
+import { isGateActive } from "@/lib/siteGateServer";
 import {
   SITE_GATE_COOKIE,
   gateCookieOptions,
   isCorrectPassword,
-  isSiteLocked,
   issueGateToken,
 } from "@/lib/siteGate";
 
@@ -39,9 +39,10 @@ function safeNext(value: string | undefined): string {
  * blocked the endpoint for opening the lock would be a closed loop.
  */
 export async function POST(request: Request) {
-  if (!isSiteLocked()) {
-    // No password configured: nothing to grant, and no cookie to mint. Not an
-    // error — the caller simply has nowhere to be let into.
+  if (!(await isGateActive())) {
+    // No password configured, or an admin opened the site: nothing to grant,
+    // and no cookie to mint. Not an error — the caller simply has nowhere to
+    // be let into.
     return Response.json(
       { ok: true, redirectTo: "/" },
       { status: 200, headers: NO_STORE },

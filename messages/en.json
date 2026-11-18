@@ -783,6 +783,22 @@
       "confirmBody": "This creates a real QAR 1.00 payment record in your SkipCash account. No money moves unless someone pays it, but it will appear in your ledger.",
       "confirmAction": "Run the test"
     },
+    "site": {
+      "title": "Website visibility",
+      "statusPublic": "Public",
+      "statusLocked": "Password protected",
+      "noPassword": "No site password is configured, so the website is public to everyone.",
+      "lockedBody": "Visitors are asked for the pre-launch password before they can see the website.",
+      "openBody": "The password is switched off. Anyone can see the website and book.",
+      "openAction": "Open the website",
+      "lockAction": "Lock it again",
+      "delayHint": "Takes up to a minute to reach every visitor.",
+      "openConfirmTitle": "Open the website to everyone?",
+      "openConfirmBody": "Anyone with the address will see the site and be able to book and pay, and search engines can start indexing it.",
+      "lockConfirmTitle": "Put the password back?",
+      "lockConfirmBody": "Visitors without the password will see the “Launching soon” page instead, including anyone midway through a booking. Paid bookings are not affected.",
+      "saveFailed": "Could not save. Check your connection and try again."
+    },
     "settings": {
       "title": "Settings",
       "pricing": "Pricing",

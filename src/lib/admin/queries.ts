@@ -696,6 +696,7 @@ export async function getAdminSettings(
         footer: Record<string, string> | null;
         faq: unknown;
         gallery: unknown;
+        site_open: boolean | null;
         updated_at: string;
       }[]
     >`SELECT * FROM settings WHERE id = 1`;
@@ -721,6 +722,9 @@ export async function getAdminSettings(
       footer: row.footer ?? {},
       faq: Array.isArray(row.faq) ? row.faq : [],
       gallery: Array.isArray(row.gallery) ? row.gallery : [],
+      // `?? false` so a database that has not had 0023 applied yet reads as
+      // "not opened" rather than crashing the settings page.
+      siteOpen: row.site_open ?? false,
       updatedAt: new Date(row.updated_at).toISOString(),
     };
   });
