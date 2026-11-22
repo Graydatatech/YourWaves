@@ -291,6 +291,39 @@ export async function addBlackout(
   return { ok: true, id: rows[0].blackout_id! };
 }
 
+/**
+ * Close every day from `from` to `to` inclusive, in ONE statement.
+ *
+ * Each day still goes through `add_blackout_date()`, so the rule that a
+ * blackout may never cover a live booking is enforced per day by the database,
+ * exactly as it is for a single date. Days that carry a booking are skipped
+ * and reported back rather than failing the whole range: "close the last week
+ * of December" should close the six free days and tell you about the seventh.
+ * One statement means the range lands atomically or not at all.
+ */
+export async function addBlackoutRange(
+  session: AdminSession,
+  from: IsoDate,
+  to: IsoDate,
+  reason: string,
+): Promise<{ blocked: IsoDate[]; skipped: IsoDate[] }> {
+  const rows = await sql<{ date: string; outcome: string }[]>`
+    SELECT to_char(d, 'YYYY-MM-DD') AS date, r.outcome
+      FROM generate_series(${from}::date, ${to}::date, interval '1 day') AS d,
+           LATERAL add_blackout_date(
+             d::date, ${reason}, ${session.email ?? session.displayName}
+           ) AS r
+     ORDER BY d
+  `;
+
+  const blocked: IsoDate[] = [];
+  const skipped: IsoDate[] = [];
+  for (const row of rows) {
+    (row.outcome === "DATE_HAS_BOOKING" ? skipped : blocked).push(row.date);
+  }
+  return { blocked, skipped };
+}
+
 export async function removeBlackout(
   session: AdminSession,
   date: IsoDate,
