@@ -7,6 +7,7 @@ import {
   DateStepBody,
   DetailsStepBody,
   TermsStepBody,
+  SiteStepBody,
   LocationStepBody,
   TimeStepBody,
   type StepBodyProps,
@@ -65,7 +66,8 @@ export function DesktopBooking({
     errorFor("location") ??
     // Last, matching the order the sections are stacked in — the button should
     // name the problem nearest the top of the form, not the newest one.
-    (showTerms ? errorFor("terms") : null);
+    (showTerms ? errorFor("terms") : null) ??
+    errorFor("site");
 
   return (
     <div className="wide:grid-cols-[minmax(0,1fr)_360px] wide:items-start grid gap-8">
@@ -94,6 +96,10 @@ export function DesktopBooking({
             <TermsStepBody locale={stepProps.locale} />
           </Block>
         )}
+        {/* No Block title: the step carries its own large red heading. */}
+        <section className="border-border border-t pt-6">
+          <SiteStepBody />
+        </section>
       </div>
 
       {/* Sticky summary column. */}

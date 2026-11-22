@@ -6,6 +6,7 @@ import { TimePicker } from "./TimePicker";
 import { LocationStep } from "./LocationStep";
 import { DetailsStep } from "./DetailsStep";
 import { TermsStep } from "./TermsStep";
+import { SiteCheckStep } from "./SiteCheckStep";
 import { useBooking } from "./BookingProvider";
 import type { PublicSettings } from "./useBookingData";
 import type { DayState } from "@/lib/availability";
@@ -83,6 +84,10 @@ export function DetailsStepBody() {
 export function TermsStepBody({ locale }: { locale: "ar" | "en" }) {
   const { showErrorFor } = useBooking();
   return <TermsStep locale={locale} showErrors={showErrorFor("terms")} />;
+}
+
+export function SiteStepBody() {
+  return <SiteCheckStep />;
 }
 
 /** Heading + helper text for a step, used by both layouts. */

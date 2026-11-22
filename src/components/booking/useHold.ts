@@ -212,7 +212,11 @@ export function useHold(draft: Draft) {
       const code: HoldErrorCode =
         body?.error === "phone_not_verified"
           ? "PHONE_NOT_VERIFIED"
-          : body?.error === "validation_failed"
+          : body?.error === "validation_failed" ||
+              // Gates the wizard already enforces; reaching the server
+              // without them means a stale tab, not a lost date.
+              body?.error === "terms_not_accepted" ||
+              body?.error === "site_not_confirmed"
             ? "VALIDATION_FAILED"
             : typeof body?.code === "string"
               ? (body.code as HoldErrorCode)
