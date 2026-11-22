@@ -1,7 +1,7 @@
 import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { Bidi } from "@/components/ui";
-import specsImage from "../../../public/media/gallery-2.jpg";
+import specsImage from "../../../public/media/safety-unit.jpg";
 import { SectionIntro } from "./SectionIntro";
 
 const SPECS = [
@@ -46,13 +46,10 @@ export function SafetySpecs() {
               loading="lazy"
               sizes="(min-width: 1024px) 45vw, 92vw"
               placeholder="blur"
-              className="object-cover opacity-90 mix-blend-luminosity"
-            />
-            {/* Diagonal stripe overlay from the dark-panel token, kept visible
-                over the photograph. */}
-            <div
-              aria-hidden="true"
-              className="bg-dark-panel absolute inset-0 opacity-45"
+              // A real photo of the unit, shown in full colour — the stripe
+              // overlay and luminosity blend were for the placeholder art.
+              // Nudged off-centre so the 4/3 crop keeps the whole rig in frame.
+              className="object-cover object-[55%_50%]"
             />
           </div>
 
