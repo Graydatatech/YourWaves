@@ -7,9 +7,10 @@ import { useBooking } from "./BookingProvider";
 /**
  * The last screen before payment: the three things the site must have.
  *
- * Large and in `--danger` on purpose. A ride that cannot fit through the gate
- * is a wasted delivery day for the crew and a cancelled party for the
- * customer, and this is the one moment it can still be caught for free.
+ * In `--danger` on purpose, at the same type sizes as every other step. A
+ * ride that cannot fit through the gate is a wasted delivery day for the crew
+ * and a cancelled party for the customer, and this is the one moment it can
+ * still be caught for free.
  *
  * The confirmation is a toggle BUTTON rather than a checkbox because the
  * business asked for a button, but it behaves like one: `aria-pressed` tells a
@@ -23,10 +24,10 @@ export function SiteCheckStep() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="text-danger flex flex-col gap-4">
-        <h3 className="text-2xl leading-snug font-extrabold">{t("title")}</h3>
-        <p className="text-xl leading-relaxed font-bold">{t("intro")}</p>
-        <ul className="flex list-disc flex-col gap-3 ps-6 text-xl leading-relaxed font-bold">
+      <div className="text-danger flex flex-col gap-3">
+        <h3 className="text-xl font-bold">{t("title")}</h3>
+        <p className="text-base leading-relaxed">{t("intro")}</p>
+        <ul className="flex list-disc flex-col gap-2 ps-6 text-base leading-relaxed">
           <li>{t("gateWidth")}</li>
           <li>{t("gateHeight")}</li>
           <li>{t("space")}</li>
