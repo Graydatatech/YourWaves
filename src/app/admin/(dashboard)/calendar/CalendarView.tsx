@@ -9,6 +9,7 @@ import { splitIsoMonth, daysInMonth, toIsoDate } from "@/lib/dates";
 import type { CalendarDay } from "@/lib/admin/types";
 import { StatusPill } from "../../components/StatusPill";
 import { ConfirmSheet } from "../../components/ConfirmSheet";
+import { BlockDaysSheet } from "./BlockDaysSheet";
 import { cn } from "@/lib/cn";
 
 /**
@@ -38,6 +39,7 @@ export function CalendarView({ month, days, today }: Props) {
   const [reason, setReason] = useState("");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
   const byDate = new Map(days.map((day) => [day.date, day]));
   const { year, month: monthNumber } = splitIsoMonth(month);
@@ -121,6 +123,18 @@ export function CalendarView({ month, days, today }: Props) {
           </Link>
         </div>
       </header>
+
+      <div className="wide:flex-row wide:items-center flex flex-col gap-2">
+        <BlockDaysSheet today={today} onResult={setNotice} />
+        {notice ? (
+          <p
+            role="status"
+            className="border-border bg-surface text-ink rounded-input border px-3 py-2 text-sm"
+          >
+            {notice}
+          </p>
+        ) : null}
+      </div>
 
       {/* --- Agenda: the mobile shape ------------------------------------- */}
       <section className="wide:hidden">

@@ -315,6 +315,28 @@ describe("blackouts", () => {
     `;
     expect(rows[0].outcome).toBe("BLACKED_OUT");
   });
+
+  // The same statement addBlackoutRange() runs.
+  it("closes a range day by day, skipping only the day with a booking", async () => {
+    await seed("confirmed"); // 2026-12-01
+
+    const rows = await testSql<{ date: string; outcome: string }[]>`
+      SELECT to_char(d, 'YYYY-MM-DD') AS date, r.outcome
+        FROM generate_series('2026-11-30'::date, '2026-12-02'::date, interval '1 day') AS d,
+             LATERAL add_blackout_date(d::date, 'holiday', 'test') AS r
+       ORDER BY d
+    `;
+    expect(rows).toEqual([
+      { date: "2026-11-30", outcome: "BLACKED_OUT" },
+      { date: "2026-12-01", outcome: "DATE_HAS_BOOKING" },
+      { date: "2026-12-02", outcome: "BLACKED_OUT" },
+    ]);
+
+    const closed = await testSql<{ date: string }[]>`
+      SELECT to_char(date, 'YYYY-MM-DD') AS date FROM blackout_dates ORDER BY date
+    `;
+    expect(closed.map((row) => row.date)).toEqual(["2026-11-30", "2026-12-02"]);
+  });
 });
 
 describe("deleting a driver", () => {

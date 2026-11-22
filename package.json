@@ -21,6 +21,7 @@
     "check:bundle:update": "node scripts/check-bundle.mjs --update",
     "gen:placeholders": "node scripts/generate-placeholders.mjs",
     "gen:og-fonts": "node scripts/gen-og-fonts.mjs",
+    "gen:brand": "node scripts/gen-brand-assets.mjs",
     "gen:qa-screenshots": "node scripts/gen-qa-screenshots.mjs",
     "prepare": "husky",
     "db:generate": "drizzle-kit generate",

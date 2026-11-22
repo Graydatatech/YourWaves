@@ -12,6 +12,8 @@ const NO_STORE = { "Cache-Control": "no-store" } as const;
  * converts, so a QAR 4,500 day rate arrives as 450000.
  */
 const patchSchema = z.object({
+  /** The pre-launch gate's on/off switch. See src/lib/siteGate.ts. */
+  siteOpen: z.boolean().optional(),
   priceRental: z.number().int().min(0).max(100_000_00).optional(),
   priceSetup: z.number().int().min(0).max(100_000_00).optional(),
   priceDelivery: z.number().int().min(0).max(100_000_00).optional(),

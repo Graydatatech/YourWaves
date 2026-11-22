@@ -432,6 +432,12 @@ export const settings = pgTable("settings", {
     .notNull()
     .default([]),
 
+  /**
+   * The admin's "open the website" switch (migration 0023). Only consulted
+   * while SITE_PASSWORD is set — see src/lib/siteGate.ts.
+   */
+  siteOpen: boolean("site_open").notNull().default(false),
+
   updatedAt: timestamp("updated_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

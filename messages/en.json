@@ -44,7 +44,7 @@
       "pillPopular": "Most booked",
       "pillNew": "New",
       "faqQuestion": "How much space do I need?",
-      "faqAnswer": "A flat area of roughly 12m x 6m with vehicle access.",
+      "faqAnswer": "A flat area of roughly 10 × 5 metres with vehicle access.",
       "bidiExplainer": "Prices, phone numbers and dates stay left-to-right inside Arabic text."
     },
     "areas": {
@@ -64,7 +64,7 @@
     "bookCta": "Book Your Wave"
   },
   "hero": {
-    "badge": "By invitation · Limited daily slots",
+    "badge": "Limited daily slots",
     "title": "The wave arrives at your door",
     "subtitle": "We bring a full-scale standing wave to your villa, set up before your booking time. You ride. We handle everything else",
     "primaryCta": "Book Your Wave",
@@ -85,7 +85,7 @@
       "delivery": {
         "tag": "Morning",
         "title": "Delivery & install",
-        "body": "Our crew arrives several hours before your booking time to set up, prepare and run the full safety check. It needs a flat 10 × 5 metre space with vehicle access."
+        "body": "Our crew arrives several hours before your booking time to set up, prepare and run the full safety check. It needs a flat 10 × 5 metre space with vehicle access, and the gate must be at least 4 metres wide and 4.5 metres high so we can bring the ride on site."
       },
       "session": {
         "tag": "Midday",
@@ -412,6 +412,7 @@
       "englishFallback": "These terms are shown in English — an Arabic version is not published yet.",
       "openFull": "Open the full terms in a new tab",
       "agree": "I have read and agree to the terms and conditions.",
+      "scrollToAgree": "Scroll to the end of the terms to agree.",
       "required": "You need to agree to the terms before you can pay.",
       "nextIsPayment": "The next step takes you to payment."
     }
@@ -662,6 +663,15 @@
       "blackoutReason": "Reason (optional)",
       "blackoutReasonPlaceholder": "Maintenance, staff holiday…",
       "blackoutHasBooking": "That date has a live booking, so it cannot be closed.",
+      "blockDays": "Block days",
+      "blockFrom": "From",
+      "blockTo": "To",
+      "blockRangeHint": "Customers will not be able to book these dates. Days that already have a live booking are left open.",
+      "blockRangeConfirm": "Block these days",
+      "blockRangeInvalid": "Choose a start date on or before the end date, within one year.",
+      "blockRangeAllBooked": "Every day in that range has a live booking, so none could be closed.",
+      "blockRangeDone": "Closed {count, plural, one {# day} other {# days}}.",
+      "blockRangeSkipped": "Skipped {count, plural, one {# day} other {# days}} with a live booking: {dates}.",
       "empty": "Nothing booked this month.",
       "agendaTitle": "Agenda"
     },
@@ -781,6 +791,22 @@
       "confirmTitle": "Test the live gateway?",
       "confirmBody": "This creates a real QAR 1.00 payment record in your SkipCash account. No money moves unless someone pays it, but it will appear in your ledger.",
       "confirmAction": "Run the test"
+    },
+    "site": {
+      "title": "Website visibility",
+      "statusPublic": "Public",
+      "statusLocked": "Password protected",
+      "noPassword": "No site password is configured, so the website is public to everyone.",
+      "lockedBody": "Visitors are asked for the pre-launch password before they can see the website.",
+      "openBody": "The password is switched off. Anyone can see the website and book.",
+      "openAction": "Open the website",
+      "lockAction": "Lock it again",
+      "delayHint": "Takes up to a minute to reach every visitor.",
+      "openConfirmTitle": "Open the website to everyone?",
+      "openConfirmBody": "Anyone with the address will see the site and be able to book and pay, and search engines can start indexing it.",
+      "lockConfirmTitle": "Put the password back?",
+      "lockConfirmBody": "Visitors without the password will see the “Launching soon” page instead, including anyone midway through a booking. Paid bookings are not affected.",
+      "saveFailed": "Could not save. Check your connection and try again."
     },
     "settings": {
       "title": "Settings",
