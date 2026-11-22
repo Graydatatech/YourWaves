@@ -9,6 +9,7 @@ import {
   DateStepBody,
   DetailsStepBody,
   TermsStepBody,
+  SiteStepBody,
   LocationStepBody,
   StepHeading,
   TimeStepBody,
@@ -69,13 +70,15 @@ export function MobileWizard({
 
       {/* Step body */}
       <div className="flex-1 py-6">
-        <StepHeading stepKey={step} />
+        {/* The site check carries its own large red heading. */}
+        {step !== "site" && <StepHeading stepKey={step} />}
 
         {step === "date" && <DateStepBody {...stepProps} />}
         {step === "time" && <TimeStepBody {...stepProps} />}
         {step === "location" && <LocationStepBody {...stepProps} />}
         {step === "details" && <DetailsStepBody />}
         {step === "terms" && <TermsStepBody locale={stepProps.locale} />}
+        {step === "site" && <SiteStepBody />}
       </div>
 
       {/* Footer: price bar + controls, above the home indicator. */}

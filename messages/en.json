@@ -185,7 +185,10 @@
       "detailsHelp": "We will confirm by WhatsApp on the number you give us.",
       "terms": "Terms",
       "termsTitle": "Terms and conditions",
-      "termsHelp": "Read these and agree before you pay."
+      "termsHelp": "Read these and agree before you pay.",
+      "site": "Check",
+      "siteTitle": "Essential booking requirements",
+      "siteHelp": "Check your site before you pay."
     },
     "calendar": {
       "gridLabel": "Choose a booking date",
@@ -300,7 +303,8 @@
       "needBuilding": "Enter the building number to continue.",
       "needStreet": "Enter the street number to continue.",
       "needZone": "Enter the zone number to continue.",
-      "needVerificationEmail": "Verify your email address to continue."
+      "needVerificationEmail": "Verify your email address to continue.",
+      "needSiteCheck": "Please confirm your site meets the requirements before paying."
     },
     "otp": {
       "intro": "We will send a 4-digit code to this number on WhatsApp.",
@@ -415,6 +419,14 @@
       "scrollToAgree": "Scroll to the end of the terms to agree.",
       "required": "You need to agree to the terms before you can pay.",
       "nextIsPayment": "The next step takes you to payment."
+    },
+    "site": {
+      "title": "Essential booking requirements:",
+      "intro": "Please make sure all three of the following are in place before completing payment:",
+      "gateWidth": "The gate entrance is at least 4 metres wide.",
+      "gateHeight": "The gate is at least 4.5 metres high.",
+      "space": "There is a clear space of 10 × 5 metres.",
+      "confirm": "I have confirmed all requirements are met and I agree"
     }
   },
   "footer": {

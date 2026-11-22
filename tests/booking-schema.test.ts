@@ -94,9 +94,9 @@ describe("step validators", () => {
     // One error per box, so the message can name the field that is empty.
     expect(stepValidators.location({})).toBe("needBuilding");
     expect(stepValidators.location({ buildingNo: "14" })).toBe("needStreet");
-    expect(
-      stepValidators.location({ buildingNo: "14", streetNo: "850" }),
-    ).toBe("needZone");
+    expect(stepValidators.location({ buildingNo: "14", streetNo: "850" })).toBe(
+      "needZone",
+    );
     expect(
       stepValidators.location({
         buildingNo: VALID.buildingNo,
@@ -245,9 +245,7 @@ describe("bookingRequestSchema", () => {
     });
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data.addressLine).toBe(
-        "Building 12, Street 850, Zone 55",
-      );
+      expect(result.data.addressLine).toBe("Building 12, Street 850, Zone 55");
     }
   });
 });
@@ -281,5 +279,20 @@ describe("formatting", () => {
     expect(ar).toHaveLength(7);
     // Arabic labels must actually be Arabic, not a fallback to English.
     expect(ar[0]).toMatch(/[؀-ۿ]/);
+  });
+});
+
+describe("site check step", () => {
+  it("is the last step, shown whether or not terms exist", async () => {
+    const { visibleSteps } = await import("@/lib/booking/schema");
+    expect(visibleSteps({ termsRequired: true }).at(-1)).toBe("site");
+    expect(visibleSteps({ termsRequired: false }).at(-1)).toBe("site");
+  });
+
+  it("blocks payment until the customer confirms the site", async () => {
+    const { stepValidators } = await import("@/lib/booking/schema");
+    expect(stepValidators.site({})).toBe("needSiteCheck");
+    expect(stepValidators.site({ siteConfirmed: false })).toBe("needSiteCheck");
+    expect(stepValidators.site({ siteConfirmed: true })).toBeNull();
   });
 });

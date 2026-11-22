@@ -120,6 +120,16 @@ export async function POST(request: Request) {
     );
   }
 
+  // --- The gate and space check -------------------------------------------
+  // Always required: unlike terms, there is no configuration in which a ride
+  // can be delivered through a gate it does not fit.
+  if (draft.siteConfirmed !== true) {
+    return Response.json(
+      { error: "site_not_confirmed" },
+      { status: 422, headers: NO_STORE },
+    );
+  }
+
   // --- Claim the date ----------------------------------------------------
   const result = await createHold({ ...draft, customerPhone: submittedPhone });
 

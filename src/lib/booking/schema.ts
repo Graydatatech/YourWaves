@@ -209,6 +209,16 @@ export const bookingDraftSchema = z.object({
    * the tick. The server's job is to refuse a booking that does not carry it.
    */
   termsAccepted: z.boolean().optional(),
+
+  /**
+   * "The gate is 4m wide, 4.5m high and there is a clear 10 x 5m space."
+   *
+   * Optional here for the same reason as `termsAccepted` (a half-filled draft
+   * must still parse); the hold route is what refuses a booking without it.
+   * A ride that cannot get through the gate is a wasted delivery day, so the
+   * customer confirms it on a screen of its own right before paying.
+   */
+  siteConfirmed: z.boolean().optional(),
 });
 
 export type BookingDraft = z.infer<typeof bookingDraftSchema>;
@@ -326,13 +336,14 @@ export type StepError =
   | "needEmail"
   | "needVerification"
   | "needVerificationEmail"
-  | "needTerms";
+  | "needTerms"
+  | "needSiteCheck";
 
 type StepValidator = (draft: DraftState) => StepError | null;
 
 /** Field-level checks the wizard uses to gate each step. */
 export const stepValidators: Record<
-  "date" | "time" | "location" | "details" | "terms",
+  "date" | "time" | "location" | "details" | "terms" | "site",
   StepValidator
 > = {
   date: (draft) =>
@@ -413,6 +424,9 @@ export const stepValidators: Record<
     if (!draft.termsRequired) return null;
     return draft.termsAccepted === true ? null : "needTerms";
   },
+
+  /** The gate and space check. Always shown, always required — see the schema. */
+  site: (draft) => (draft.siteConfirmed === true ? null : "needSiteCheck"),
 };
 
 /** True when the number currently entered is the one that was verified. */
@@ -467,6 +481,7 @@ export const STEP_ORDER: readonly StepKey[] = [
   "details",
   "location",
   "terms",
+  "site",
 ];
 
 /**
